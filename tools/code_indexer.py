@@ -906,8 +906,8 @@ class CodeIndexer:
         Existing File Analysis:
         - Path: {file_summary.file_path}
         - Type: {file_summary.file_type}
-        - Functions: {', '.join(file_summary.main_functions)}
-        - Concepts: {', '.join(file_summary.key_concepts)}
+        - Functions: {", ".join(file_summary.main_functions)}
+        - Concepts: {", ".join(file_summary.key_concepts)}
         - Summary: {file_summary.summary}
 
         Target Project Structure:
