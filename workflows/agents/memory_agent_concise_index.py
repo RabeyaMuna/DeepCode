@@ -21,7 +21,7 @@ import logging
 import os
 import time
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class ConciseMemoryAgent:
@@ -641,13 +641,6 @@ class ConciseMemoryAgent:
             Formatted summary
         """
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # Create formatted list of implemented files
-        implemented_files_list = (
-            "\n".join([f"- {file}" for file in self.implemented_files])
-            if self.implemented_files
-            else "- None yet"
-        )
 
         formatted_summary = f"""# Code Implementation Summary
 **Generated**: {timestamp}
