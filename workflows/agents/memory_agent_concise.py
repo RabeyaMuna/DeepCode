@@ -642,7 +642,7 @@ class ConciseMemoryAgent:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Create formatted list of implemented files
-        implemented_files_list = (
+        _implemented_files_list = (
             "\n".join([f"- {file}" for file in self.implemented_files])
             if self.implemented_files
             else "- None yet"
