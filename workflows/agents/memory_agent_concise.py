@@ -517,7 +517,6 @@ class ConciseMemoryAgent:
         # Get formatted file lists
         file_lists = self.get_formatted_files_lists()
         implemented_files_list = file_lists["implemented"]
-        unimplemented_files_list = file_lists["unimplemented"]
 
         prompt = f"""You are an expert code implementation summarizer. Analyze the implemented code file and create a structured summary.
 
@@ -641,13 +640,6 @@ class ConciseMemoryAgent:
         """
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Create formatted list of implemented files
-        implemented_files_list = (
-            "\n".join([f"- {file}" for file in self.implemented_files])
-            if self.implemented_files
-            else "- None yet"
-        )
-
         #         formatted_summary = f"""# Code Implementation Summary
         # **All Previously Implemented Files:**
         # {implemented_files_list}
@@ -685,13 +677,6 @@ class ConciseMemoryAgent:
         Returns:
             Fallback summary
         """
-        # Create formatted list of implemented files
-        implemented_files_list = (
-            "\n".join([f"- {file}" for file in self.implemented_files])
-            if self.implemented_files
-            else "- None yet"
-        )
-
         summary = f"""# Code Implementation Summary
 **All Previously Implemented Files:**
 {implemented_files_list}
