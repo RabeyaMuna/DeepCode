@@ -5,23 +5,23 @@ Contains all event handling and business logic
 """
 
 import asyncio
-import time
-import os
-import traceback
 import atexit
-import signal
-from datetime import datetime
-from typing import Dict, Any
-
-import streamlit as st
-import nest_asyncio
 import concurrent.futures
+import os
+import signal
+import time
+import traceback
+from datetime import datetime
+from typing import Any
+
+import nest_asyncio
+import streamlit as st
 
 # Import necessary modules
 from mcp_agent.app import MCPApp
 from workflows.agent_orchestration_engine import (
-    execute_multi_agent_research_pipeline,
     execute_chat_based_planning_pipeline,
+    execute_multi_agent_research_pipeline,
 )
 
 
@@ -87,7 +87,7 @@ async def process_input_async(
     input_type: str,
     enable_indexing: bool = True,
     progress_callback=None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Process input asynchronously
 
@@ -112,9 +112,7 @@ async def process_input_async(
             # Initialize progress
             if progress_callback:
                 if input_type == "chat":
-                    progress_callback(
-                        5, "🚀 Initializing chat-based planning pipeline..."
-                    )
+                    progress_callback(5, "🚀 Initializing chat-based planning pipeline...")
                 else:
                     progress_callback(5, "🚀 Initializing AI research engine...")
 
@@ -214,12 +212,8 @@ def run_async_task(coro):
                 try:
                     import threading
 
-                    if hasattr(
-                        threading.current_thread(), SCRIPT_RUN_CONTEXT_ATTR_NAME
-                    ):
-                        delattr(
-                            threading.current_thread(), SCRIPT_RUN_CONTEXT_ATTR_NAME
-                        )
+                    if hasattr(threading.current_thread(), SCRIPT_RUN_CONTEXT_ATTR_NAME):
+                        delattr(threading.current_thread(), SCRIPT_RUN_CONTEXT_ATTR_NAME)
                 except Exception:
                     pass  # Ignore cleanup errors
 
@@ -231,9 +225,7 @@ def run_async_task(coro):
     # Use thread pool to run async task, avoiding event loop conflicts
     executor = None
     try:
-        executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=1, thread_name_prefix="deepcode_ctx_async"
-        )
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="deepcode_ctx_async")
         future = executor.submit(run_in_new_loop)
         result = future.result(timeout=300)  # 5 minute timeout
         return result
@@ -322,16 +314,12 @@ def run_async_task_simple(coro):
             # Use context manager to ensure thread pool is properly closed
             executor = None
             try:
-                executor = concurrent.futures.ThreadPoolExecutor(
-                    max_workers=1, thread_name_prefix="deepcode_async"
-                )
+                executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="deepcode_async")
                 future = executor.submit(run_in_thread)
                 result = future.result(timeout=300)  # 5 minute timeout
                 return result
             except concurrent.futures.TimeoutError:
-                st.error(
-                    "Processing timeout after 5 minutes. Please try again with a smaller file."
-                )
+                st.error("Processing timeout after 5 minutes. Please try again with a smaller file.")
                 raise TimeoutError("Processing timeout")
             except Exception as e:
                 st.error(f"Async processing error: {e}")
@@ -372,9 +360,7 @@ def run_async_task_simple(coro):
             gc.collect()
 
 
-def handle_processing_workflow(
-    input_source: str, input_type: str, enable_indexing: bool = True
-) -> Dict[str, Any]:
+def handle_processing_workflow(input_source: str, input_type: str, enable_indexing: bool = True) -> dict[str, Any]:
     """
     Main processing function for workflow
 
@@ -387,15 +373,15 @@ def handle_processing_workflow(
         Processing result
     """
     from .components import (
+        display_status,
         enhanced_progress_display_component,
         update_step_indicator,
-        display_status,
     )
 
     # Display enhanced progress components
     chat_mode = input_type == "chat"
-    progress_bar, status_text, step_indicators, workflow_steps = (
-        enhanced_progress_display_component(enable_indexing, chat_mode)
+    progress_bar, status_text, step_indicators, workflow_steps = enhanced_progress_display_component(
+        enable_indexing, chat_mode
     )
 
     # Step mapping: map progress percentages to step indices - adjust based on mode and indexing toggle
@@ -447,9 +433,7 @@ def handle_processing_workflow(
         new_step = step_mapping.get(progress, current_step)
         if new_step != current_step:
             current_step = new_step
-            update_step_indicator(
-                step_indicators, workflow_steps, current_step, "active"
-            )
+            update_step_indicator(step_indicators, workflow_steps, current_step, "active")
 
         time.sleep(0.3)  # Brief pause for users to see progress changes
 
@@ -459,9 +443,7 @@ def handle_processing_workflow(
     elif enable_indexing:
         update_progress(5, "🚀 Initializing AI research engine and loading models...")
     else:
-        update_progress(
-            5, "🚀 Initializing AI research engine (Fast mode - indexing disabled)..."
-        )
+        update_progress(5, "🚀 Initializing AI research engine (Fast mode - indexing disabled)...")
     update_step_indicator(step_indicators, workflow_steps, 0, "active")
 
     # Start async processing with progress callback
@@ -469,19 +451,13 @@ def handle_processing_workflow(
         try:
             # First try using simple async processing method
             result = run_async_task_simple(
-                process_input_async(
-                    input_source, input_type, enable_indexing, update_progress
-                )
+                process_input_async(input_source, input_type, enable_indexing, update_progress)
             )
         except Exception as e:
             st.warning(f"Primary async method failed: {e}")
             # Fallback method: use original thread pool method
             try:
-                result = run_async_task(
-                    process_input_async(
-                        input_source, input_type, enable_indexing, update_progress
-                    )
-                )
+                result = run_async_task(process_input_async(input_source, input_type, enable_indexing, update_progress))
             except Exception as backup_error:
                 st.error(f"Both async methods failed. Error: {backup_error}")
                 return {
@@ -494,9 +470,7 @@ def handle_processing_workflow(
     if result["status"] == "success":
         # Complete all steps
         update_progress(100, "✅ All processing stages completed successfully!")
-        update_step_indicator(
-            step_indicators, workflow_steps, len(workflow_steps), "completed"
-        )
+        update_step_indicator(step_indicators, workflow_steps, len(workflow_steps), "completed")
 
         # Display success information
         st.balloons()  # Add celebration animation
@@ -531,7 +505,7 @@ def handle_processing_workflow(
     return result
 
 
-def update_session_state_with_result(result: Dict[str, Any], input_type: str):
+def update_session_state_with_result(result: dict[str, Any], input_type: str):
     """
     Update session state with result
 
@@ -662,9 +636,7 @@ def initialize_session_state():
     if "last_error" not in st.session_state:
         st.session_state.last_error = None
     if "enable_indexing" not in st.session_state:
-        st.session_state.enable_indexing = (
-            False  # Default enable indexing functionality
-        )
+        st.session_state.enable_indexing = False  # Default enable indexing functionality
 
 
 def cleanup_resources():
@@ -672,11 +644,11 @@ def cleanup_resources():
     Clean up system resources to prevent memory leaks
     """
     try:
-        import gc
-        import threading
-        import multiprocessing
         import asyncio
+        import gc
+        import multiprocessing
         import sys
+        import threading
 
         # 1. Clean up asyncio-related resources
         try:
@@ -685,9 +657,7 @@ def cleanup_resources():
                 loop = asyncio.get_running_loop()
                 # Cancel all pending tasks
                 if loop and not loop.is_closed():
-                    pending_tasks = [
-                        task for task in asyncio.all_tasks(loop) if not task.done()
-                    ]
+                    pending_tasks = [task for task in asyncio.all_tasks(loop) if not task.done()]
                     if pending_tasks:
                         for task in pending_tasks:
                             if not task.cancelled():

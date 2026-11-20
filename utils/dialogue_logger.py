@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Comprehensive Dialogue Logger for Code Implementation Workflow
 Logs complete conversation rounds with detailed formatting and paper-specific organization
@@ -9,7 +8,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 
 
 class DialogueLogger:
@@ -27,13 +26,8 @@ class DialogueLogger:
             base_path: Base path for logs (defaults to agent_folders structure)
         """
         self.paper_id = paper_id
-        self.base_path = (
-            base_path
-            or "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders"
-        )
-        self.log_directory = os.path.join(
-            self.base_path, "papers", str(paper_id), "logs"
-        )
+        self.base_path = base_path or "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders"
+        self.log_directory = os.path.join(self.base_path, "papers", str(paper_id), "logs")
 
         # Create log directory if it doesn't exist
         Path(self.log_directory).mkdir(parents=True, exist_ok=True)
@@ -82,9 +76,7 @@ This log contains the complete conversation rounds between the user and assistan
         except Exception as e:
             print(f"⚠️ Failed to initialize log file: {e}")
 
-    def start_new_round(
-        self, round_type: str = "implementation", context: Dict[str, Any] = None
-    ):
+    def start_new_round(self, round_type: str = "implementation", context: dict[str, Any] = None):
         """
         Start a new dialogue round
 
@@ -151,9 +143,7 @@ This log contains the complete conversation rounds between the user and assistan
             }
         )
 
-    def log_assistant_response(
-        self, response: str, response_type: str = "assistant_response"
-    ):
+    def log_assistant_response(self, response: str, response_type: str = "assistant_response"):
         """
         Log assistant response
 
@@ -173,7 +163,7 @@ This log contains the complete conversation rounds between the user and assistan
             }
         )
 
-    def log_tool_calls(self, tool_calls: List[Dict[str, Any]]):
+    def log_tool_calls(self, tool_calls: list[dict[str, Any]]):
         """
         Log tool calls made by the assistant
 
@@ -193,7 +183,7 @@ This log contains the complete conversation rounds between the user and assistan
                 }
             )
 
-    def log_tool_results(self, tool_results: List[Dict[str, Any]]):
+    def log_tool_results(self, tool_results: list[dict[str, Any]]):
         """
         Log tool execution results
 
@@ -227,9 +217,9 @@ This log contains the complete conversation rounds between the user and assistan
 
     def log_memory_optimization(
         self,
-        messages_before: List[Dict],
-        messages_after: List[Dict],
-        optimization_stats: Dict[str, Any],
+        messages_before: list[dict],
+        messages_after: list[dict],
+        optimization_stats: dict[str, Any],
         approach: str = "memory_optimization",
     ):
         """
@@ -246,9 +236,7 @@ This log contains the complete conversation rounds between the user and assistan
 
         # Calculate what was removed/kept
         removed_count = len(messages_before) - len(messages_after)
-        compression_ratio = (
-            (removed_count / len(messages_before) * 100) if messages_before else 0
-        )
+        compression_ratio = (removed_count / len(messages_before) * 100) if messages_before else 0
 
         # Log the optimization details
         optimization_data = {
@@ -314,15 +302,9 @@ This log contains the complete conversation rounds between the user and assistan
                 round_data = self.current_round_data
 
                 # Round header
-                f.write(
-                    f"\n## Round {round_data['round_number']}: {round_data['round_type'].title()}\n\n"
-                )
-                f.write(
-                    f"**Start Time:** {round_data['start_time'].strftime('%Y-%m-%d %H:%M:%S')}\n"
-                )
-                f.write(
-                    f"**End Time:** {round_data['end_time'].strftime('%Y-%m-%d %H:%M:%S')}\n"
-                )
+                f.write(f"\n## Round {round_data['round_number']}: {round_data['round_type'].title()}\n\n")
+                f.write(f"**Start Time:** {round_data['start_time'].strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"**End Time:** {round_data['end_time'].strftime('%Y-%m-%d %H:%M:%S')}\n")
                 f.write(f"**Duration:** {round_data['duration']:.2f} seconds\n")
                 f.write(f"**Status:** {round_data['status']}\n\n")
 
@@ -342,9 +324,7 @@ This log contains the complete conversation rounds between the user and assistan
                             "user": "👤",
                             "assistant": "🤖",
                         }.get(msg["role"], "📝")
-                        f.write(
-                            f"#### {role_emoji} {msg['role'].title()} Message {i}\n\n"
-                        )
+                        f.write(f"#### {role_emoji} {msg['role'].title()} Message {i}\n\n")
                         f.write(f"**Type:** {msg['type']}\n")
                         f.write(f"**Timestamp:** {msg['timestamp']}\n\n")
                         f.write("```\n")
@@ -360,9 +340,7 @@ This log contains the complete conversation rounds between the user and assistan
                         f.write(f"**Timestamp:** {tool_call['timestamp']}\n\n")
                         f.write("**Input:**\n")
                         f.write("```json\n")
-                        f.write(
-                            json.dumps(tool_call["input"], indent=2, ensure_ascii=False)
-                        )
+                        f.write(json.dumps(tool_call["input"], indent=2, ensure_ascii=False))
                         f.write("\n```\n\n")
 
                 # Tool results
@@ -386,18 +364,10 @@ This log contains the complete conversation rounds between the user and assistan
 
                         f.write(f"#### 🧹 Memory Optimization {i}\n\n")
                         f.write(f"**Approach:** {opt_data['approach']}\n")
-                        f.write(
-                            f"**Messages Before:** {opt_data['messages_before_count']}\n"
-                        )
-                        f.write(
-                            f"**Messages After:** {opt_data['messages_after_count']}\n"
-                        )
-                        f.write(
-                            f"**Messages Removed:** {opt_data['messages_removed_count']}\n"
-                        )
-                        f.write(
-                            f"**Compression Ratio:** {opt_data['compression_ratio']}\n"
-                        )
+                        f.write(f"**Messages Before:** {opt_data['messages_before_count']}\n")
+                        f.write(f"**Messages After:** {opt_data['messages_after_count']}\n")
+                        f.write(f"**Messages Removed:** {opt_data['messages_removed_count']}\n")
+                        f.write(f"**Compression Ratio:** {opt_data['compression_ratio']}\n")
                         f.write(f"**Timestamp:** {opt_data['timestamp']}\n\n")
 
                         # Show optimization stats
@@ -422,9 +392,7 @@ This log contains the complete conversation rounds between the user and assistan
                                 # Truncate very long messages
                                 if len(content) > 3000:
                                     content = content[:3000] + "...[truncated]"
-                                f.write(
-                                    f"- **{role} {j}:** {content[:3000]}{'...' if len(content) > 100 else ''}\n"
-                                )
+                                f.write(f"- **{role} {j}:** {content[:3000]}{'...' if len(content) > 100 else ''}\n")
                             f.write("\n")
 
                         # Show messages after optimization
@@ -436,24 +404,16 @@ This log contains the complete conversation rounds between the user and assistan
                                 # Truncate very long messages
                                 if len(content) > 3000:
                                     content = content[:3000] + "...[truncated]"
-                                f.write(
-                                    f"- **{role} {j}:** {content[:3000]}{'...' if len(content) > 100 else ''}\n"
-                                )
+                                f.write(f"- **{role} {j}:** {content[:3000]}{'...' if len(content) > 100 else ''}\n")
                             f.write("\n")
 
                         # Show what was removed
                         if len(messages_before) > len(messages_after):
                             removed_messages = (
-                                messages_before[: -len(messages_after)]
-                                if messages_after
-                                else messages_before
+                                messages_before[: -len(messages_after)] if messages_after else messages_before
                             )
-                            f.write(
-                                f"**Messages Removed ({len(removed_messages)}):**\n\n"
-                            )
-                            for j, msg in enumerate(
-                                removed_messages[-3:], 1
-                            ):  # Show last 3 removed
+                            f.write(f"**Messages Removed ({len(removed_messages)}):**\n\n")
+                            for j, msg in enumerate(removed_messages[-3:], 1):  # Show last 3 removed
                                 role = msg.get("role", "unknown")
                                 content = msg.get("content", "")
                                 if len(content) > 3000:
@@ -467,9 +427,7 @@ This log contains the complete conversation rounds between the user and assistan
                 if round_data.get("metadata"):
                     f.write("### Metadata\n\n")
                     for key, value in round_data["metadata"].items():
-                        if (
-                            key != "memory_optimization"
-                        ):  # Skip memory optimization metadata as it's shown above
+                        if key != "memory_optimization":  # Skip memory optimization metadata as it's shown above
                             f.write(f"- **{key}:** {value}\n")
                     f.write("\n")
 
@@ -490,10 +448,10 @@ This log contains the complete conversation rounds between the user and assistan
         system_prompt: str = "",
         user_message: str = "",
         assistant_response: str = "",
-        tool_calls: List[Dict] = None,
-        tool_results: List[Dict] = None,
+        tool_calls: list[dict] = None,
+        tool_results: list[dict] = None,
         round_type: str = "exchange",
-        context: Dict = None,
+        context: dict = None,
         summary: str = "",
     ):
         """
@@ -528,16 +486,14 @@ This log contains the complete conversation rounds between the user and assistan
 
         self.complete_round(summary)
 
-    def get_session_stats(self) -> Dict[str, Any]:
+    def get_session_stats(self) -> dict[str, Any]:
         """Get session statistics"""
         return {
             "paper_id": self.paper_id,
             "session_start": self.session_start_time.isoformat(),
             "total_rounds": self.round_counter,
             "log_file": self.log_filepath,
-            "session_duration": (
-                datetime.now() - self.session_start_time
-            ).total_seconds(),
+            "session_duration": (datetime.now() - self.session_start_time).total_seconds(),
         }
 
     def finalize_session(self, final_summary: str = ""):
@@ -554,9 +510,7 @@ This log contains the complete conversation rounds between the user and assistan
                 f.write(
                     f"**Session Duration:** {(datetime.now() - self.session_start_time).total_seconds():.2f} seconds\n"
                 )
-                f.write(
-                    f"**End Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-                )
+                f.write(f"**End Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
 
                 if final_summary:
                     f.write("### Final Summary\n\n")
@@ -615,21 +569,15 @@ if __name__ == "__main__":
         system_prompt="You are a code implementation assistant.",
         user_message="Implement the transformer model",
         assistant_response="I'll implement the transformer model step by step.",
-        tool_calls=[
-            {"id": "1", "name": "write_file", "input": {"filename": "transformer.py"}}
-        ],
-        tool_results=[
-            {"tool_name": "write_file", "result": "File created successfully"}
-        ],
+        tool_calls=[{"id": "1", "name": "write_file", "input": {"filename": "transformer.py"}}],
+        tool_results=[{"tool_name": "write_file", "result": "File created successfully"}],
         round_type="implementation",
         context={"files_implemented": 1},
         summary="Successfully implemented transformer model",
     )
 
     # Test memory optimization logging
-    logger.start_new_round(
-        "memory_optimization", {"trigger_reason": "write_file_detected"}
-    )
+    logger.start_new_round("memory_optimization", {"trigger_reason": "write_file_detected"})
 
     # Mock messages before and after optimization
     messages_before = [
@@ -664,8 +612,6 @@ if __name__ == "__main__":
     logger.complete_round("Memory optimization test completed")
 
     # Finalize session
-    logger.finalize_session(
-        "Test session with memory optimization logging completed successfully"
-    )
+    logger.finalize_session("Test session with memory optimization logging completed successfully")
 
     print("✅ Dialogue logger test completed with memory optimization")

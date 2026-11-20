@@ -7,8 +7,8 @@ DeepCode - AI Research Engine Launcher
 """
 
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -48,8 +48,8 @@ def check_dependencies():
 
     # Check LibreOffice for Office document conversion
     try:
-        import subprocess
         import platform
+        import subprocess
 
         subprocess_kwargs = {
             "capture_output": True,
@@ -66,9 +66,7 @@ def check_dependencies():
             try:
                 result = subprocess.run([cmd, "--version"], **subprocess_kwargs)
                 if result.returncode == 0:
-                    print(
-                        "✅ LibreOffice is installed (for Office document conversion)"
-                    )
+                    print("✅ LibreOffice is installed (for Office document conversion)")
                     libreoffice_found = True
                     break
             except (

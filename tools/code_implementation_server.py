@@ -12,18 +12,18 @@ Usage:
 python tools/code_implementation_server.py
 """
 
-import os
-import subprocess
-import json
-import sys
 import io
-from pathlib import Path
-import re
-from typing import Dict, Any, List
-import tempfile
-import shutil
+import json
 import logging
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 # Set standard output encoding to UTF-8
 if sys.stdout.encoding != "utf-8":
@@ -100,20 +100,16 @@ def validate_path(path: str) -> Path:
     return full_path
 
 
-def log_operation(action: str, details: Dict[str, Any]):
+def log_operation(action: str, details: dict[str, Any]):
     """Log operation history"""
-    OPERATION_HISTORY.append(
-        {"timestamp": datetime.now().isoformat(), "action": action, "details": details}
-    )
+    OPERATION_HISTORY.append({"timestamp": datetime.now().isoformat(), "action": action, "details": details})
 
 
 # ==================== File Operation Tools ====================
 
 
 @mcp.tool()
-async def read_file(
-    file_path: str, start_line: int = None, end_line: int = None
-) -> str:
+async def read_file(file_path: str, start_line: int = None, end_line: int = None) -> str:
     """
     Read file content, supports specifying line number range
 
@@ -130,12 +126,10 @@ async def read_file(
 
         if not full_path.exists():
             result = {"status": "error", "message": f"File does not exist: {file_path}"}
-            log_operation(
-                "read_file_error", {"file_path": file_path, "error": "file_not_found"}
-            )
+            log_operation("read_file_error", {"file_path": file_path, "error": "file_not_found"})
             return json.dumps(result, ensure_ascii=False, indent=2)
 
-        with open(full_path, "r", encoding="utf-8") as f:
+        with open(full_path, encoding="utf-8") as f:
             lines = f.readlines()
 
         # 处理行号范围
@@ -177,9 +171,7 @@ async def read_file(
 
 
 @mcp.tool()
-async def write_file(
-    file_path: str, content: str, create_dirs: bool = True, create_backup: bool = False
-) -> str:
+async def write_file(file_path: str, content: str, create_dirs: bool = True, create_backup: bool = False) -> str:
     """
     Write content to file
 
@@ -265,9 +257,7 @@ async def execute_python(code: str, timeout: int = 30) -> str:
     """
     try:
         # Create temporary file
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False, encoding="utf-8"
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as f:
             f.write(code)
             temp_file = f.name
 
@@ -418,7 +408,7 @@ async def execute_bash(command: str, timeout: int = 30) -> str:
 
 
 @mcp.tool()
-async def read_code_mem(file_paths: List[str]) -> str:
+async def read_code_mem(file_paths: list[str]) -> str:
     """
     Check if file summaries exist in implement_code_summary.md for multiple files
 
@@ -434,9 +424,7 @@ async def read_code_mem(file_paths: List[str]) -> str:
                 "status": "error",
                 "message": "file_paths parameter is required and must be a list",
             }
-            log_operation(
-                "read_code_mem_error", {"error": "missing_or_invalid_file_paths"}
-            )
+            log_operation("read_code_mem_error", {"error": "missing_or_invalid_file_paths"})
             return json.dumps(result, ensure_ascii=False, indent=2)
 
         # Remove duplicates while preserving order
@@ -463,7 +451,7 @@ async def read_code_mem(file_paths: List[str]) -> str:
             return json.dumps(result, ensure_ascii=False, indent=2)
 
         # Read the summary file
-        with open(summary_file_path, "r", encoding="utf-8") as f:
+        with open(summary_file_path, encoding="utf-8") as f:
             summary_content = f.read()
 
         if not summary_content.strip():
@@ -485,9 +473,7 @@ async def read_code_mem(file_paths: List[str]) -> str:
 
         for file_path in unique_file_paths:
             # Extract file-specific section from summary
-            file_section = _extract_file_section_from_summary(
-                summary_content, file_path
-            )
+            file_section = _extract_file_section_from_summary(summary_content, file_path)
 
             if file_section:
                 file_result = {
@@ -540,20 +526,14 @@ async def read_code_mem(file_paths: List[str]) -> str:
         result = {
             "status": "error",
             "message": f"Failed to check code memory: {str(e)}",
-            "file_paths": file_paths
-            if isinstance(file_paths, list)
-            else [str(file_paths)],
+            "file_paths": file_paths if isinstance(file_paths, list) else [str(file_paths)],
             "results": [],
         }
-        log_operation(
-            "read_code_mem_error", {"file_paths": file_paths, "error": str(e)}
-        )
+        log_operation("read_code_mem_error", {"file_paths": file_paths, "error": str(e)})
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
-def _extract_file_section_from_summary(
-    summary_content: str, target_file_path: str
-) -> str:
+def _extract_file_section_from_summary(summary_content: str, target_file_path: str) -> str:
     """
     Extract the specific section for a file from the summary content
 
@@ -645,9 +625,7 @@ def _paths_match(
         return True
 
     # Strategy 4: Ends with match
-    if normalized_target.endswith(normalized_summary) or normalized_summary.endswith(
-        normalized_target
-    ):
+    if normalized_target.endswith(normalized_summary) or normalized_summary.endswith(normalized_target):
         return True
 
     # Strategy 5: Contains match for longer paths
@@ -671,9 +649,7 @@ def _remove_common_prefixes(file_path: str) -> str:
     return path
 
 
-def _extract_file_section_alternative(
-    summary_content: str, target_file_path: str
-) -> str:
+def _extract_file_section_alternative(summary_content: str, target_file_path: str) -> str:
     """Alternative method to extract file section using simpler pattern matching"""
 
     # Get the basename for fallback matching
@@ -694,8 +670,7 @@ def _extract_file_section_alternative(
 
                         # Check if this matches our target
                         if (
-                            _normalize_file_path(target_file_path)
-                            == _normalize_file_path(file_part)
+                            _normalize_file_path(target_file_path) == _normalize_file_path(file_part)
                             or target_basename == os.path.basename(file_part)
                             or target_file_path in file_part
                             or file_part.endswith(target_file_path)
@@ -772,7 +747,7 @@ async def search_code(
 
         for file_path in file_paths:
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
+                with open(file_path, encoding="utf-8") as f:
                     lines = f.readlines()
 
                 total_files_searched += 1
@@ -872,7 +847,7 @@ async def get_file_structure(directory: str = ".", max_depth: int = 5) -> str:
             }
             return json.dumps(result, ensure_ascii=False, indent=2)
 
-        def scan_directory(path: Path, current_depth: int = 0) -> Dict[str, Any]:
+        def scan_directory(path: Path, current_depth: int = 0) -> dict[str, Any]:
             """Recursively scan directory"""
             if current_depth >= max_depth:
                 return {"type": "directory", "name": path.name, "truncated": True}
@@ -928,8 +903,7 @@ async def get_file_structure(directory: str = ".", max_depth: int = 5) -> str:
             "structure": structure,
             "summary": {
                 "total_files": counts["files"],
-                "total_directories": counts["directories"]
-                - 1,  # Exclude root directory
+                "total_directories": counts["directories"] - 1,  # Exclude root directory
             },
         }
 
@@ -951,9 +925,7 @@ async def get_file_structure(directory: str = ".", max_depth: int = 5) -> str:
             "message": f"Failed to get file structure: {str(e)}",
             "directory": directory,
         }
-        log_operation(
-            "get_file_structure_error", {"directory": directory, "error": str(e)}
-        )
+        log_operation("get_file_structure_error", {"directory": directory, "error": str(e)})
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
@@ -1009,9 +981,7 @@ async def set_workspace(workspace_path: str) -> str:
             "message": f"Failed to set workspace: {str(e)}",
             "workspace_path": workspace_path,
         }
-        log_operation(
-            "set_workspace_error", {"workspace_path": workspace_path, "error": str(e)}
-        )
+        log_operation("set_workspace_error", {"workspace_path": workspace_path, "error": str(e)})
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
@@ -1027,9 +997,7 @@ async def get_operation_history(last_n: int = 10) -> str:
         JSON string of operation history
     """
     try:
-        recent_history = (
-            OPERATION_HISTORY[-last_n:] if last_n > 0 else OPERATION_HISTORY
-        )
+        recent_history = OPERATION_HISTORY[-last_n:] if last_n > 0 else OPERATION_HISTORY
 
         result = {
             "status": "success",
@@ -1055,9 +1023,7 @@ async def get_operation_history(last_n: int = 10) -> str:
 def main():
     """Start MCP server"""
     print("🚀 Code Implementation MCP Server")
-    print(
-        "📝 Paper Code Implementation Tool Server / Paper Code Implementation Tool Server"
-    )
+    print("📝 Paper Code Implementation Tool Server / Paper Code Implementation Tool Server")
     print("")
     print("Available tools / Available tools:")
     # print("  • read_file           - Read file contents / Read file contents")

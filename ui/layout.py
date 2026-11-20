@@ -7,17 +7,17 @@ Contains main page layout and flow control
 import streamlit as st
 
 from .components import (
-    display_header,
     display_features,
-    sidebar_control_panel,
+    display_header,
+    footer_component,
     input_method_selector,
     results_display_component,
-    footer_component,
+    sidebar_control_panel,
 )
 from .handlers import (
-    initialize_session_state,
-    handle_start_processing_button,
     handle_error_display,
+    handle_start_processing_button,
+    initialize_session_state,
 )
 from .styles import get_main_styles
 
@@ -46,9 +46,7 @@ def render_main_content():
 
     # Display results if available
     if st.session_state.show_results and st.session_state.last_result:
-        results_display_component(
-            st.session_state.last_result, st.session_state.task_counter
-        )
+        results_display_component(st.session_state.last_result, st.session_state.task_counter)
         st.markdown("---")
         return
 

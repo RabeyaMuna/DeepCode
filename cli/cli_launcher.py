@@ -67,13 +67,9 @@ def check_dependencies():
         for dep in missing_deps:
             print(f"   - {dep}")
         print("\nPlease install missing dependencies using:")
-        print(
-            f"pip install {' '.join([d for d in missing_deps if d != 'cli-components'])}"
-        )
+        print(f"pip install {' '.join([d for d in missing_deps if d != 'cli-components'])}")
         if "cli-components" in missing_deps:
-            print(
-                "CLI components appear to be missing - please check the cli/ directory"
-            )
+            print("CLI components appear to be missing - please check the cli/ directory")
         return False
 
     print("✅ All CLI dependencies satisfied")

@@ -7,7 +7,9 @@ with enhanced progress reporting, error handling, and CLI-specific optimizations
 """
 
 import os
-from typing import Callable, Dict, Any
+from collections.abc import Callable
+from typing import Any
+
 from mcp_agent.app import MCPApp
 
 
@@ -34,7 +36,7 @@ class CLIWorkflowAdapter:
         self.logger = None
         self.context = None
 
-    async def initialize_mcp_app(self) -> Dict[str, Any]:
+    async def initialize_mcp_app(self) -> dict[str, Any]:
         """
         Initialize MCP application for CLI usage.
 
@@ -43,9 +45,7 @@ class CLIWorkflowAdapter:
         """
         try:
             if self.cli_interface:
-                self.cli_interface.show_spinner(
-                    "🚀 Initializing Agent Orchestration Engine", 2.0
-                )
+                self.cli_interface.show_spinner("🚀 Initializing Agent Orchestration Engine", 2.0)
 
             # Initialize MCP application
             self.app = MCPApp(name="cli_agent_orchestration")
@@ -61,9 +61,7 @@ class CLIWorkflowAdapter:
             self.context.config.mcp.servers["filesystem"].args.extend([os.getcwd()])
 
             if self.cli_interface:
-                self.cli_interface.print_status(
-                    "🧠 Agent Orchestration Engine initialized successfully", "success"
-                )
+                self.cli_interface.print_status("🧠 Agent Orchestration Engine initialized successfully", "success")
 
             return {
                 "status": "success",
@@ -84,14 +82,10 @@ class CLIWorkflowAdapter:
             try:
                 await self.app_context.__aexit__(None, None, None)
                 if self.cli_interface:
-                    self.cli_interface.print_status(
-                        "🧹 Resources cleaned up successfully", "info"
-                    )
+                    self.cli_interface.print_status("🧹 Resources cleaned up successfully", "info")
             except Exception as e:
                 if self.cli_interface:
-                    self.cli_interface.print_status(
-                        f"⚠️ Cleanup warning: {str(e)}", "warning"
-                    )
+                    self.cli_interface.print_status(f"⚠️ Cleanup warning: {str(e)}", "warning")
 
     def create_cli_progress_callback(self) -> Callable:
         """
@@ -126,9 +120,7 @@ class CLIWorkflowAdapter:
 
         return progress_callback
 
-    async def execute_full_pipeline(
-        self, input_source: str, enable_indexing: bool = True
-    ) -> Dict[str, Any]:
+    async def execute_full_pipeline(self, input_source: str, enable_indexing: bool = True) -> dict[str, Any]:
         """
         Execute the complete intelligent multi-agent research orchestration pipeline.
 
@@ -151,9 +143,7 @@ class CLIWorkflowAdapter:
             # Display pipeline start
             if self.cli_interface:
                 mode = "comprehensive" if enable_indexing else "optimized"
-                self.cli_interface.print_status(
-                    f"🚀 Starting {mode} agent orchestration pipeline...", "processing"
-                )
+                self.cli_interface.print_status(f"🚀 Starting {mode} agent orchestration pipeline...", "processing")
                 self.cli_interface.display_processing_stages(0)
 
             # Execute the pipeline
@@ -189,7 +179,7 @@ class CLIWorkflowAdapter:
                 "pipeline_mode": "comprehensive" if enable_indexing else "optimized",
             }
 
-    async def execute_chat_pipeline(self, user_input: str) -> Dict[str, Any]:
+    async def execute_chat_pipeline(self, user_input: str) -> dict[str, Any]:
         """
         Execute the chat-based planning and implementation pipeline.
 
@@ -210,34 +200,22 @@ class CLIWorkflowAdapter:
                 if self.cli_interface:
                     # Map progress to CLI stages for chat mode
                     if progress <= 5:
-                        self.cli_interface.display_processing_stages(
-                            0, chat_mode=True
-                        )  # Initialize
+                        self.cli_interface.display_processing_stages(0, chat_mode=True)  # Initialize
                     elif progress <= 30:
-                        self.cli_interface.display_processing_stages(
-                            1, chat_mode=True
-                        )  # Planning
+                        self.cli_interface.display_processing_stages(1, chat_mode=True)  # Planning
                     elif progress <= 50:
-                        self.cli_interface.display_processing_stages(
-                            2, chat_mode=True
-                        )  # Setup
+                        self.cli_interface.display_processing_stages(2, chat_mode=True)  # Setup
                     elif progress <= 70:
-                        self.cli_interface.display_processing_stages(
-                            3, chat_mode=True
-                        )  # Save Plan
+                        self.cli_interface.display_processing_stages(3, chat_mode=True)  # Save Plan
                     else:
-                        self.cli_interface.display_processing_stages(
-                            4, chat_mode=True
-                        )  # Implement
+                        self.cli_interface.display_processing_stages(4, chat_mode=True)  # Implement
 
                     # Display status message
                     self.cli_interface.print_status(message, "processing")
 
             # Display pipeline start
             if self.cli_interface:
-                self.cli_interface.print_status(
-                    "🚀 Starting chat-based planning pipeline...", "processing"
-                )
+                self.cli_interface.print_status("🚀 Starting chat-based planning pipeline...", "processing")
                 self.cli_interface.display_processing_stages(0, chat_mode=True)
 
             # Execute the chat pipeline with indexing enabled for enhanced code understanding
@@ -250,9 +228,7 @@ class CLIWorkflowAdapter:
 
             # Display completion
             if self.cli_interface:
-                self.cli_interface.display_processing_stages(
-                    4, chat_mode=True
-                )  # Final stage for chat mode
+                self.cli_interface.display_processing_stages(4, chat_mode=True)  # Final stage for chat mode
                 self.cli_interface.print_status(
                     "🎉 Chat-based planning pipeline completed successfully!",
                     "complete",
@@ -269,7 +245,7 @@ class CLIWorkflowAdapter:
 
     async def process_input_with_orchestration(
         self, input_source: str, input_type: str, enable_indexing: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process input using the intelligent agent orchestration engine.
 
@@ -304,9 +280,7 @@ class CLIWorkflowAdapter:
                 pipeline_result = await self.execute_chat_pipeline(input_source)
             else:
                 # Use traditional multi-agent research pipeline for files/URLs
-                pipeline_result = await self.execute_full_pipeline(
-                    input_source, enable_indexing=enable_indexing
-                )
+                pipeline_result = await self.execute_full_pipeline(input_source, enable_indexing=enable_indexing)
 
             return {
                 "status": pipeline_result["status"],

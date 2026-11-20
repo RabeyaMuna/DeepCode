@@ -14,32 +14,29 @@ Features:
 - Multi-format support with fallback options
 """
 
+import io
 import os
 import re
-import aiohttp
-import aiofiles
 import shutil
 import sys
-import io
-from typing import List, Dict, Optional, Any
-from urllib.parse import urlparse, unquote
 from datetime import datetime
+from typing import Any
+from urllib.parse import unquote, urlparse
 
+import aiofiles
+import aiohttp
 from mcp.server import FastMCP
 
 # Docling imports for document conversion
 try:
-    from docling.document_converter import DocumentConverter
     from docling.datamodel.base_models import InputFormat
     from docling.datamodel.pipeline_options import PdfPipelineOptions
-    from docling.document_converter import PdfFormatOption
+    from docling.document_converter import DocumentConverter, PdfFormatOption
 
     DOCLING_AVAILABLE = True
 except ImportError:
     DOCLING_AVAILABLE = False
-    print(
-        "Warning: docling package not available. Document conversion will be disabled."
-    )
+    print("Warning: docling package not available. Document conversion will be disabled.")
 
 # Fallback PDF text extraction
 try:
@@ -48,9 +45,7 @@ try:
     PYPDF2_AVAILABLE = True
 except ImportError:
     PYPDF2_AVAILABLE = False
-    print(
-        "Warning: PyPDF2 package not available. Fallback PDF extraction will be disabled."
-    )
+    print("Warning: PyPDF2 package not available. Fallback PDF extraction will be disabled.")
 
 # 设置标准输出编码为UTF-8
 if sys.stdout.encoding != "utf-8":
@@ -69,7 +64,7 @@ mcp = FastMCP("smart-pdf-downloader")
 
 
 # 辅助函数
-def format_success_message(action: str, details: Dict[str, Any]) -> str:
+def format_success_message(action: str, details: dict[str, Any]) -> str:
     """格式化成功消息"""
     return f"✅ {action}\n" + "\n".join(f"   {k}: {v}" for k, v in details.items())
 
@@ -84,9 +79,7 @@ def format_warning_message(action: str, warning: str) -> str:
     return f"⚠️ {action}\n   Warning: {warning}"
 
 
-async def perform_document_conversion(
-    file_path: str, extract_images: bool = True
-) -> Optional[str]:
+async def perform_document_conversion(file_path: str, extract_images: bool = True) -> str | None:
     """
     执行文档转换的共用逻辑
 
@@ -109,25 +102,19 @@ async def perform_document_conversion(
         try:
             with open(file_path, "rb") as f:
                 header = f.read(8)
-                is_pdf_file = header.startswith(b'%PDF')
+                is_pdf_file = header.startswith(b"%PDF")
         except Exception:
             is_pdf_file = file_path.lower().endswith(".pdf")
-    
+
     if is_pdf_file and PYPDF2_AVAILABLE:
         try:
             simple_converter = SimplePdfConverter()
             conversion_result = simple_converter.convert_pdf_to_markdown(file_path)
             if conversion_result["success"]:
                 conversion_msg = "\n   [INFO] PDF converted to Markdown (PyPDF2)"
-                conversion_msg += (
-                    f"\n   Markdown file: {conversion_result['output_file']}"
-                )
-                conversion_msg += (
-                    f"\n   Conversion time: {conversion_result['duration']:.2f} seconds"
-                )
-                conversion_msg += (
-                    f"\n   Pages extracted: {conversion_result['pages_extracted']}"
-                )
+                conversion_msg += f"\n   Markdown file: {conversion_result['output_file']}"
+                conversion_msg += f"\n   Conversion time: {conversion_result['duration']:.2f} seconds"
+                conversion_msg += f"\n   Pages extracted: {conversion_result['pages_extracted']}"
 
             else:
                 conversion_msg = f"\n   [WARNING] PDF conversion failed: {conversion_result['error']}"
@@ -170,8 +157,8 @@ def format_file_operation_result(
     operation: str,
     source: str,
     destination: str,
-    result: Dict[str, Any],
-    conversion_msg: Optional[str] = None,
+    result: dict[str, Any],
+    conversion_msg: str | None = None,
 ) -> str:
     """
     格式化文件操作结果的共用逻辑
@@ -218,9 +205,7 @@ class LocalPathExtractor:
         path = path.strip("\"'")
 
         # 检查是否为URL
-        if re.match(r"^https?://", path, re.IGNORECASE) or re.match(
-            r"^ftp://", path, re.IGNORECASE
-        ):
+        if re.match(r"^https?://", path, re.IGNORECASE) or re.match(r"^ftp://", path, re.IGNORECASE):
             return False
 
         # 路径指示符
@@ -229,14 +214,12 @@ class LocalPathExtractor:
 
         if any(indicator in path for indicator in path_indicators) or has_extension:
             expanded_path = os.path.expanduser(path)
-            return os.path.exists(expanded_path) or any(
-                indicator in path for indicator in path_indicators
-            )
+            return os.path.exists(expanded_path) or any(indicator in path for indicator in path_indicators)
 
         return False
 
     @staticmethod
-    def extract_local_paths(text: str) -> List[str]:
+    def extract_local_paths(text: str) -> list[str]:
         """从文本中提取本地文件路径"""
         patterns = [
             r'"([^"]+)"',
@@ -285,7 +268,7 @@ class URLExtractor:
         return url
 
     @classmethod
-    def extract_urls(cls, text: str) -> List[str]:
+    def extract_urls(cls, text: str) -> list[str]:
         """从文本中提取URL"""
         urls = []
 
@@ -369,14 +352,9 @@ class URLExtractor:
                     # 根据路径中的关键词推断文件类型
                     if "/pdf/" in path.lower() or path.lower().endswith("pdf"):
                         filename += ".pdf"
-                    elif any(
-                        ext in path.lower() for ext in ["/doc/", "/word/", ".docx"]
-                    ):
+                    elif any(ext in path.lower() for ext in ["/doc/", "/word/", ".docx"]):
                         filename += ".docx"
-                    elif any(
-                        ext in path.lower()
-                        for ext in ["/ppt/", "/powerpoint/", ".pptx"]
-                    ):
+                    elif any(ext in path.lower() for ext in ["/ppt/", "/powerpoint/", ".pptx"]):
                         filename += ".pptx"
                     elif any(ext in path.lower() for ext in ["/csv/", ".csv"]):
                         filename += ".csv"
@@ -392,7 +370,7 @@ class PathExtractor:
     """路径提取器"""
 
     @staticmethod
-    def extract_target_path(text: str) -> Optional[str]:
+    def extract_target_path(text: str) -> str | None:
         """从文本中提取目标路径"""
         patterns = [
             r'(?:save|download|store|put|place|write|copy|move)\s+(?:to|into|in|at)\s+["\']?([^\s"\']+)["\']?',
@@ -430,9 +408,7 @@ class PathExtractor:
 class SimplePdfConverter:
     """简单的PDF转换器，使用PyPDF2提取文本"""
 
-    def convert_pdf_to_markdown(
-        self, input_file: str, output_file: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def convert_pdf_to_markdown(self, input_file: str, output_file: str | None = None) -> dict[str, Any]:
         """
         使用PyPDF2将PDF转换为Markdown格式
 
@@ -519,9 +495,7 @@ class DoclingConverter:
 
     def __init__(self):
         if not DOCLING_AVAILABLE:
-            raise ImportError(
-                "docling package is not available. Please install it first."
-            )
+            raise ImportError("docling package is not available. Please install it first.")
 
         # 配置PDF处理选项
         pdf_pipeline_options = PdfPipelineOptions()
@@ -531,11 +505,7 @@ class DoclingConverter:
         # 创建文档转换器（使用基础模式）
         try:
             self.converter = DocumentConverter(
-                format_options={
-                    InputFormat.PDF: PdfFormatOption(
-                        pipeline_options=pdf_pipeline_options
-                    )
-                }
+                format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_pipeline_options)}
             )
         except Exception:
             # 如果失败，尝试更简单的配置
@@ -558,7 +528,7 @@ class DoclingConverter:
         except Exception:
             return False
 
-    def extract_images(self, doc, output_dir: str) -> Dict[str, str]:
+    def extract_images(self, doc, output_dir: str) -> dict[str, str]:
         """
         提取文档中的图片并保存到本地
 
@@ -608,9 +578,7 @@ class DoclingConverter:
 
         return image_map
 
-    def process_markdown_with_images(
-        self, markdown_content: str, image_map: Dict[str, str]
-    ) -> str:
+    def process_markdown_with_images(self, markdown_content: str, image_map: dict[str, str]) -> str:
         """
         处理Markdown内容，替换图片占位符为实际的图片路径
 
@@ -630,18 +598,16 @@ class DoclingConverter:
                 return match.group(0)
 
         # 替换docling的图片占位符
-        processed_content = re.sub(
-            r"!\[Image\]\(docling://image/([^)]+)\)", replace_img, markdown_content
-        )
+        processed_content = re.sub(r"!\[Image\]\(docling://image/([^)]+)\)", replace_img, markdown_content)
 
         return processed_content
 
     def convert_to_markdown(
         self,
         input_file: str,
-        output_file: Optional[str] = None,
+        output_file: str | None = None,
         extract_images: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         将文档转换为Markdown格式，支持图片提取
 
@@ -673,9 +639,7 @@ class DoclingConverter:
                     }
             else:
                 # 对于URL，检查是否为支持的格式
-                if not input_file.lower().endswith(
-                    (".pdf", ".docx", ".pptx", ".html", ".md", ".txt")
-                ):
+                if not input_file.lower().endswith((".pdf", ".docx", ".pptx", ".html", ".md", ".txt")):
                     return {
                         "success": False,
                         "error": f"Unsupported URL format: {input_file}",
@@ -712,9 +676,7 @@ class DoclingConverter:
 
             # 处理图片占位符
             if extract_images and image_map:
-                markdown_content = self.process_markdown_with_images(
-                    markdown_content, image_map
-                )
+                markdown_content = self.process_markdown_with_images(markdown_content, image_map)
 
             # 保存到文件
             with open(output_file, "w", encoding="utf-8") as f:
@@ -750,7 +712,7 @@ class DoclingConverter:
             }
 
 
-async def check_url_accessible(url: str) -> Dict[str, Any]:
+async def check_url_accessible(url: str) -> dict[str, Any]:
     """检查URL是否可访问"""
     try:
         timeout = aiohttp.ClientTimeout(total=10)
@@ -771,7 +733,7 @@ async def check_url_accessible(url: str) -> Dict[str, Any]:
         }
 
 
-async def download_file(url: str, destination: str) -> Dict[str, Any]:
+async def download_file(url: str, destination: str) -> dict[str, Any]:
     """下载单个文件"""
     start_time = datetime.now()
     chunk_size = 8192
@@ -784,9 +746,7 @@ async def download_file(url: str, destination: str) -> Dict[str, Any]:
                 response.raise_for_status()
 
                 # 获取文件信息
-                content_type = response.headers.get(
-                    "Content-Type", "application/octet-stream"
-                )
+                content_type = response.headers.get("Content-Type", "application/octet-stream")
 
                 # 确保目标目录存在
                 parent_dir = os.path.dirname(destination)
@@ -829,7 +789,7 @@ async def download_file(url: str, destination: str) -> Dict[str, Any]:
         }
 
 
-async def move_local_file(source_path: str, destination: str) -> Dict[str, Any]:
+async def move_local_file(source_path: str, destination: str) -> dict[str, Any]:
     """移动本地文件到目标位置"""
     start_time = datetime.now()
 
@@ -934,17 +894,13 @@ async def download_files(instruction: str) -> str:
 
             # 检查文件是否已存在
             if os.path.exists(destination):
-                results.append(
-                    f"[WARNING] Skipped {url}: File already exists at {destination}"
-                )
+                results.append(f"[WARNING] Skipped {url}: File already exists at {destination}")
                 continue
 
             # 先检查URL是否可访问
             check_result = await check_url_accessible(url)
             if not check_result["accessible"]:
-                results.append(
-                    f"[ERROR] Failed to access {url}: HTTP {check_result['status'] or 'Connection failed'}"
-                )
+                results.append(f"[ERROR] Failed to access {url}: HTTP {check_result['status'] or 'Connection failed'}")
                 continue
 
             # 执行下载
@@ -953,14 +909,10 @@ async def download_files(instruction: str) -> str:
             # 执行转换（如果成功下载）
             conversion_msg = None
             if result["success"]:
-                conversion_msg = await perform_document_conversion(
-                    destination, extract_images=True
-                )
+                conversion_msg = await perform_document_conversion(destination, extract_images=True)
 
             # 格式化结果
-            msg = format_file_operation_result(
-                "download", url, destination, result, conversion_msg
-            )
+            msg = format_file_operation_result("download", url, destination, result, conversion_msg)
 
         except Exception as e:
             msg = f"[ERROR] Failed to download: {url}\n"
@@ -995,9 +947,7 @@ async def download_files(instruction: str) -> str:
 
             # 检查目标文件是否已存在
             if os.path.exists(destination):
-                results.append(
-                    f"[WARNING] Skipped {local_path}: File already exists at {destination}"
-                )
+                results.append(f"[WARNING] Skipped {local_path}: File already exists at {destination}")
                 continue
 
             # 执行移动
@@ -1006,14 +956,10 @@ async def download_files(instruction: str) -> str:
             # 执行转换（如果成功移动）
             conversion_msg = None
             if result["success"]:
-                conversion_msg = await perform_document_conversion(
-                    destination, extract_images=True
-                )
+                conversion_msg = await perform_document_conversion(destination, extract_images=True)
 
             # 格式化结果
-            msg = format_file_operation_result(
-                "move", local_path, destination, result, conversion_msg
-            )
+            msg = format_file_operation_result("move", local_path, destination, result, conversion_msg)
 
         except Exception as e:
             msg = f"[ERROR] Failed to move: {local_path}\n"
@@ -1072,9 +1018,7 @@ async def parse_download_urls(text: str) -> str:
 
 
 @mcp.tool()
-async def download_file_to(
-    url: str, destination: Optional[str] = None, filename: Optional[str] = None
-) -> str:
+async def download_file_to(url: str, destination: str | None = None, filename: str | None = None) -> str:
     """
     Download a specific file with detailed options.
 
@@ -1110,9 +1054,7 @@ async def download_file_to(
 
     # 检查文件是否已存在
     if os.path.exists(target_path):
-        return format_error_message(
-            "Download aborted", f"File already exists at {target_path}"
-        )
+        return format_error_message("Download aborted", f"File already exists at {target_path}")
 
     # 先检查URL
     check_result = await check_url_accessible(url)
@@ -1123,11 +1065,7 @@ async def download_file_to(
         )
 
     # 显示下载信息
-    size_mb = (
-        int(check_result["content_length"]) / (1024 * 1024)
-        if check_result["content_length"]
-        else 0
-    )
+    size_mb = int(check_result["content_length"]) / (1024 * 1024) if check_result["content_length"] else 0
     msg = "[INFO] Downloading file:\n"
     msg += f"   URL: {url}\n"
     msg += f"   Target: {target_path}\n"
@@ -1141,9 +1079,7 @@ async def download_file_to(
     # 执行转换（如果成功下载）
     conversion_msg = None
     if result["success"]:
-        conversion_msg = await perform_document_conversion(
-            target_path, extract_images=True
-        )
+        conversion_msg = await perform_document_conversion(target_path, extract_images=True)
 
         # 添加下载信息前缀
         actual_size_mb = result["size"] / (1024 * 1024)
@@ -1164,9 +1100,7 @@ async def download_file_to(
 
 
 @mcp.tool()
-async def move_file_to(
-    source: str, destination: Optional[str] = None, filename: Optional[str] = None
-) -> str:
+async def move_file_to(source: str, destination: str | None = None, filename: str | None = None) -> str:
     """
     Move a local file to a new location with detailed options.
 
@@ -1226,9 +1160,7 @@ async def move_file_to(
     # 执行转换（如果成功移动）
     conversion_msg = None
     if result["success"]:
-        conversion_msg = await perform_document_conversion(
-            target_path, extract_images=True
-        )
+        conversion_msg = await perform_document_conversion(target_path, extract_images=True)
 
         # 添加移动信息前缀
         info_msg = "[SUCCESS] File moved successfully!\n"
@@ -1361,9 +1293,7 @@ if __name__ == "__main__":
         print("   Install docling to enable: pip install docling")
 
     print("\nAvailable tools:")
-    print(
-        "  • download_files - Download files or move local files from natural language"
-    )
+    print("  • download_files - Download files or move local files from natural language")
     print("  • parse_download_urls - Extract URLs, local paths and destination paths")
     print("  • download_file_to - Download a specific file with options")
     print("  • move_file_to - Move a specific local file with options")

@@ -5,9 +5,8 @@ Enhanced CLI Interface Module for DeepCode
 """
 
 import os
-import time
 import platform
-from typing import Optional
+import time
 
 
 class Colors:
@@ -118,18 +117,14 @@ class CLIInterface:
 
         icon = status_styles.get(status_type, status_styles["info"])
         timestamp = time.strftime("%H:%M:%S")
-        print(
-            f"[{Colors.BOLD}{timestamp}{Colors.ENDC}] {icon} {Colors.BOLD}{message}{Colors.ENDC}"
-        )
+        print(f"[{Colors.BOLD}{timestamp}{Colors.ENDC}] {icon} {Colors.BOLD}{message}{Colors.ENDC}")
 
     def create_menu(self):
         """Create enhanced interactive menu"""
         # Display current configuration
         pipeline_mode = "🧠 COMPREHENSIVE" if self.enable_indexing else "⚡ OPTIMIZED"
         index_status = "✅ Enabled" if self.enable_indexing else "🔶 Disabled"
-        segmentation_mode = (
-            "📄 SMART" if self.segmentation_enabled else "📋 TRADITIONAL"
-        )
+        segmentation_mode = "📄 SMART" if self.segmentation_enabled else "📋 TRADITIONAL"
 
         menu = f"""
 {Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗
@@ -166,12 +161,10 @@ class CLIInterface:
         print(f"\n{Colors.BOLD}{Colors.OKCYAN}➤ Your choice: {Colors.ENDC}", end="")
         return input().strip().lower()
 
-    def upload_file_gui(self) -> Optional[str]:
+    def upload_file_gui(self) -> str | None:
         """Enhanced file upload interface with better error handling"""
         if not self.tkinter_available:
-            self.print_status(
-                "GUI file dialog not available - using manual input", "warning"
-            )
+            self.print_status("GUI file dialog not available - using manual input", "warning")
             return self._get_manual_file_path()
 
         def select_file():
@@ -221,24 +214,18 @@ class CLIInterface:
         file_path = select_file()
 
         if file_path:
-            self.print_status(
-                f"File selected: {os.path.basename(file_path)}", "success"
-            )
+            self.print_status(f"File selected: {os.path.basename(file_path)}", "success")
             return file_path
         else:
             self.print_status("No file selected", "warning")
             return None
 
-    def _get_manual_file_path(self) -> Optional[str]:
+    def _get_manual_file_path(self) -> str | None:
         """Get file path through manual input with validation"""
         self.print_separator("─", 79, Colors.YELLOW)
         print(f"{Colors.BOLD}{Colors.YELLOW}📁 Manual File Path Input{Colors.ENDC}")
-        print(
-            f"{Colors.CYAN}Please enter the full path to your research paper file:{Colors.ENDC}"
-        )
-        print(
-            f"{Colors.CYAN}Supported formats: PDF, DOCX, PPTX, HTML, TXT, MD{Colors.ENDC}"
-        )
+        print(f"{Colors.CYAN}Please enter the full path to your research paper file:{Colors.ENDC}")
+        print(f"{Colors.CYAN}Supported formats: PDF, DOCX, PPTX, HTML, TXT, MD{Colors.ENDC}")
         self.print_separator("─", 79, Colors.YELLOW)
 
         while True:
@@ -257,11 +244,7 @@ class CLIInterface:
 
             if not os.path.exists(file_path):
                 self.print_status(f"File not found: {file_path}", "error")
-                retry = (
-                    input(f"{Colors.YELLOW}Try again? (y/n): {Colors.ENDC}")
-                    .strip()
-                    .lower()
-                )
+                retry = input(f"{Colors.YELLOW}Try again? (y/n): {Colors.ENDC}").strip().lower()
                 if retry != "y":
                     return None
                 continue
@@ -285,35 +268,21 @@ class CLIInterface:
 
             if file_ext not in supported_extensions:
                 self.print_status(f"Unsupported file format: {file_ext}", "warning")
-                proceed = (
-                    input(f"{Colors.YELLOW}Process anyway? (y/n): {Colors.ENDC}")
-                    .strip()
-                    .lower()
-                )
+                proceed = input(f"{Colors.YELLOW}Process anyway? (y/n): {Colors.ENDC}").strip().lower()
                 if proceed != "y":
                     continue
 
-            self.print_status(
-                f"File validated: {os.path.basename(file_path)}", "success"
-            )
+            self.print_status(f"File validated: {os.path.basename(file_path)}", "success")
             return file_path
 
     def get_url_input(self) -> str:
         """Enhanced URL input with validation"""
         self.print_separator("─", 79, Colors.GREEN)
         print(f"{Colors.BOLD}{Colors.GREEN}🌐 URL Input Interface{Colors.ENDC}")
-        print(
-            f"{Colors.CYAN}Enter a research paper URL from supported platforms:{Colors.ENDC}"
-        )
-        print(
-            f"{Colors.CYAN}• arXiv (arxiv.org)        • IEEE Xplore (ieeexplore.ieee.org){Colors.ENDC}"
-        )
-        print(
-            f"{Colors.CYAN}• ACM Digital Library      • SpringerLink • Nature • Science{Colors.ENDC}"
-        )
-        print(
-            f"{Colors.CYAN}• Direct PDF links         • Academic publisher websites{Colors.ENDC}"
-        )
+        print(f"{Colors.CYAN}Enter a research paper URL from supported platforms:{Colors.ENDC}")
+        print(f"{Colors.CYAN}• arXiv (arxiv.org)        • IEEE Xplore (ieeexplore.ieee.org){Colors.ENDC}")
+        print(f"{Colors.CYAN}• ACM Digital Library      • SpringerLink • Nature • Science{Colors.ENDC}")
+        print(f"{Colors.CYAN}• Direct PDF links         • Academic publisher websites{Colors.ENDC}")
         self.print_separator("─", 79, Colors.GREEN)
 
         while True:
@@ -329,11 +298,7 @@ class CLIInterface:
 
             if not url.startswith(("http://", "https://")):
                 self.print_status("URL must start with http:// or https://", "error")
-                retry = (
-                    input(f"{Colors.YELLOW}Try again? (y/n): {Colors.ENDC}")
-                    .strip()
-                    .lower()
-                )
+                retry = input(f"{Colors.YELLOW}Try again? (y/n): {Colors.ENDC}").strip().lower()
                 if retry != "y":
                     return ""
                 continue
@@ -352,14 +317,8 @@ class CLIInterface:
 
             is_academic = any(domain in url.lower() for domain in academic_domains)
             if not is_academic and not url.lower().endswith(".pdf"):
-                self.print_status(
-                    "URL doesn't appear to be from a known academic platform", "warning"
-                )
-                proceed = (
-                    input(f"{Colors.YELLOW}Process anyway? (y/n): {Colors.ENDC}")
-                    .strip()
-                    .lower()
-                )
+                self.print_status("URL doesn't appear to be from a known academic platform", "warning")
+                proceed = input(f"{Colors.YELLOW}Process anyway? (y/n): {Colors.ENDC}").strip().lower()
                 if proceed != "y":
                     continue
 
@@ -370,9 +329,7 @@ class CLIInterface:
         """Enhanced chat input interface for coding requirements"""
         self.print_separator("─", 79, Colors.PURPLE)
         print(f"{Colors.BOLD}{Colors.PURPLE}💬 Chat Input Interface{Colors.ENDC}")
-        print(
-            f"{Colors.CYAN}Describe your coding requirements in natural language.{Colors.ENDC}"
-        )
+        print(f"{Colors.CYAN}Describe your coding requirements in natural language.{Colors.ENDC}")
         print(
             f"{Colors.CYAN}Our AI will analyze your needs and generate a comprehensive implementation plan.{Colors.ENDC}"
         )
@@ -381,27 +338,17 @@ class CLIInterface:
         # Display examples to help users
         print(f"\n{Colors.BOLD}{Colors.YELLOW}💡 Examples:{Colors.ENDC}")
         print(f"{Colors.CYAN}Academic Research:{Colors.ENDC}")
-        print(
-            "  • 'I need to implement a reinforcement learning algorithm for robotic control'"
-        )
-        print(
-            "  • 'Create a neural network for image classification with attention mechanisms'"
-        )
+        print("  • 'I need to implement a reinforcement learning algorithm for robotic control'")
+        print("  • 'Create a neural network for image classification with attention mechanisms'")
         print(f"{Colors.CYAN}Engineering Projects:{Colors.ENDC}")
-        print(
-            "  • 'Develop a web application for project management with user authentication'"
-        )
+        print("  • 'Develop a web application for project management with user authentication'")
         print("  • 'Create a data visualization dashboard for sales analytics'")
         print(f"{Colors.CYAN}Mixed Projects:{Colors.ENDC}")
-        print(
-            "  • 'Implement a machine learning model with a web interface for real-time predictions'"
-        )
+        print("  • 'Implement a machine learning model with a web interface for real-time predictions'")
 
         self.print_separator("─", 79, Colors.PURPLE)
 
-        print(
-            f"\n{Colors.BOLD}{Colors.OKCYAN}✏️  Enter your coding requirements below:{Colors.ENDC}"
-        )
+        print(f"\n{Colors.BOLD}{Colors.OKCYAN}✏️  Enter your coding requirements below:{Colors.ENDC}")
         print(
             f"{Colors.YELLOW}(Type your description, press Enter twice when finished, or Ctrl+C to cancel){Colors.ENDC}"
         )
@@ -444,9 +391,7 @@ class CLIInterface:
                 "Input too short. Please provide more detailed requirements (at least 20 characters)",
                 "warning",
             )
-            retry = (
-                input(f"{Colors.YELLOW}Try again? (y/n): {Colors.ENDC}").strip().lower()
-            )
+            retry = input(f"{Colors.YELLOW}Try again? (y/n): {Colors.ENDC}").strip().lower()
             if retry == "y":
                 return self.get_chat_input()  # Recursive call for retry
             return ""
@@ -465,19 +410,9 @@ class CLIInterface:
         print(f"{Colors.YELLOW}{preview}{Colors.ENDC}")
 
         # Confirm with user
-        confirm = (
-            input(
-                f"\n{Colors.BOLD}{Colors.OKCYAN}Proceed with this input? (y/n): {Colors.ENDC}"
-            )
-            .strip()
-            .lower()
-        )
+        confirm = input(f"\n{Colors.BOLD}{Colors.OKCYAN}Proceed with this input? (y/n): {Colors.ENDC}").strip().lower()
         if confirm != "y":
-            retry = (
-                input(f"{Colors.YELLOW}Edit input? (y/n): {Colors.ENDC}")
-                .strip()
-                .lower()
-            )
+            retry = input(f"{Colors.YELLOW}Edit input? (y/n): {Colors.ENDC}").strip().lower()
             if retry == "y":
                 return self.get_chat_input()  # Recursive call for retry
             return ""
@@ -512,9 +447,7 @@ class CLIInterface:
         spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
         end_time = time.time() + duration
 
-        print(
-            f"{Colors.BOLD}{Colors.CYAN}{message}... {Colors.ENDC}", end="", flush=True
-        )
+        print(f"{Colors.BOLD}{Colors.CYAN}{message}... {Colors.ENDC}", end="", flush=True)
 
         i = 0
         while time.time() < end_time:
@@ -526,9 +459,7 @@ class CLIInterface:
             time.sleep(0.1)
             i += 1
 
-        print(
-            f"\r{Colors.BOLD}{Colors.CYAN}{message}... {Colors.OKGREEN}✓{Colors.ENDC}"
-        )
+        print(f"\r{Colors.BOLD}{Colors.CYAN}{message}... {Colors.OKGREEN}✓{Colors.ENDC}")
 
     def display_processing_stages(
         self,
@@ -571,9 +502,7 @@ class CLIInterface:
             ]
             pipeline_mode = "OPTIMIZED"
 
-        print(
-            f"\n{Colors.BOLD}{Colors.CYAN}📋 {pipeline_mode} PIPELINE STATUS{Colors.ENDC}"
-        )
+        print(f"\n{Colors.BOLD}{Colors.CYAN}📋 {pipeline_mode} PIPELINE STATUS{Colors.ENDC}")
         self.print_separator("─", 79, Colors.CYAN)
 
         for i, (icon, name, desc) in enumerate(stages):
@@ -584,9 +513,7 @@ class CLIInterface:
             else:
                 status = f"{Colors.CYAN}⏸️  PENDING{Colors.ENDC}"
 
-            print(
-                f"{icon} {Colors.BOLD}{name:<12}{Colors.ENDC} │ {desc:<25} │ {status}"
-            )
+            print(f"{icon} {Colors.BOLD}{name:<12}{Colors.ENDC} │ {desc:<25} │ {status}")
 
         self.print_separator("─", 79, Colors.CYAN)
 
@@ -601,9 +528,7 @@ class CLIInterface:
 
     def print_error_box(self, title: str, error_msg: str):
         """Print formatted error box"""
-        print(
-            f"\n{Colors.FAIL}╔══════════════════════════════════════════════════════════════╗"
-        )
+        print(f"\n{Colors.FAIL}╔══════════════════════════════════════════════════════════════╗")
         print(f"║ {Colors.BOLD}ERROR: {title:<50}{Colors.FAIL} ║")
         print("╠══════════════════════════════════════════════════════════════╣")
 
@@ -623,9 +548,7 @@ class CLIInterface:
         for line in lines:
             print(f"║ {line:<56} ║")
 
-        print(
-            f"╚══════════════════════════════════════════════════════════════╝{Colors.ENDC}"
-        )
+        print(f"╚══════════════════════════════════════════════════════════════╝{Colors.ENDC}")
 
     def cleanup_cache(self):
         """清理Python缓存文件 / Clean up Python cache files"""
@@ -765,14 +688,8 @@ class CLIInterface:
             elif choice in ["s", "segmentation"]:
                 current_state = getattr(self, "segmentation_enabled", True)
                 self.segmentation_enabled = not current_state
-                seg_mode = (
-                    "📄 Smart Segmentation"
-                    if self.segmentation_enabled
-                    else "📋 Traditional Processing"
-                )
-                self.print_status(
-                    f"Document processing switched to: {seg_mode}", "success"
-                )
+                seg_mode = "📄 Smart Segmentation" if self.segmentation_enabled else "📋 Traditional Processing"
+                self.print_status(f"Document processing switched to: {seg_mode}", "success")
                 time.sleep(1)
                 self.show_configuration_menu()
                 return
@@ -781,6 +698,4 @@ class CLIInterface:
                 return
 
             else:
-                self.print_status(
-                    "Invalid choice. Please enter 'T', 'S', or 'B'.", "warning"
-                )
+                self.print_status("Invalid choice. Please enter 'T', 'S', or 'B'.", "warning")

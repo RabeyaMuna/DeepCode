@@ -18,7 +18,8 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
+
 import yaml
 
 # Add tools directory to path
@@ -47,15 +48,13 @@ class CodebaseIndexWorkflow:
 
         if not logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
         return logger
 
-    def extract_file_tree_from_plan(self, plan_content: str) -> Optional[str]:
+    def extract_file_tree_from_plan(self, plan_content: str) -> str | None:
         """
         Extract file tree structure from initial_plan.txt content
 
@@ -109,20 +108,14 @@ class CodebaseIndexWorkflow:
                 file_tree = match.group(1).strip()
                 lines = [line for line in file_tree.split("\n") if line.strip()]
                 if len(lines) >= 5:
-                    self.logger.info(
-                        f"📊 Extracted file tree structure from code block ({len(lines)} lines)"
-                    )
+                    self.logger.info(f"📊 Extracted file tree structure from code block ({len(lines)} lines)")
                     return file_tree
 
         # Final fallback: extract file paths from file mentions and create basic structure
-        self.logger.warning(
-            "⚠️ No standard file tree found, trying to extract from file mentions..."
-        )
+        self.logger.warning("⚠️ No standard file tree found, trying to extract from file mentions...")
 
         # Search for file paths in backticks throughout the document
-        file_mentions = re.findall(
-            r"`([^`]*(?:\.py|\.txt|\.md|\.yaml|\.yml)[^`]*)`", plan_content
-        )
+        file_mentions = re.findall(r"`([^`]*(?:\.py|\.txt|\.md|\.yaml|\.yml)[^`]*)`", plan_content)
 
         if file_mentions:
             # Organize files into directory structure
@@ -184,9 +177,7 @@ class CodebaseIndexWorkflow:
 
             if len(structure_lines) >= 3:
                 file_tree = "\n".join(structure_lines)
-                self.logger.info(
-                    f"📊 Generated file tree from file mentions ({len(structure_lines)} lines)"
-                )
+                self.logger.info(f"📊 Generated file tree from file mentions ({len(structure_lines)} lines)")
                 return file_tree
 
         # If no file tree found, return None
@@ -205,7 +196,7 @@ class CodebaseIndexWorkflow:
         """
         try:
             # Load complete plan content
-            with open(plan_path, "r", encoding="utf-8") as f:
+            with open(plan_path, encoding="utf-8") as f:
                 plan_content = f.read()
 
             self.logger.info(f"📄 Loaded initial plan ({len(plan_content)} characters)")
@@ -214,18 +205,14 @@ class CodebaseIndexWorkflow:
             file_tree = self.extract_file_tree_from_plan(plan_content)
 
             if file_tree:
-                self.logger.info(
-                    "✅ Successfully extracted file tree from initial plan"
-                )
+                self.logger.info("✅ Successfully extracted file tree from initial plan")
                 self.logger.info("📋 Extracted structure preview:")
                 # Show first few lines of extracted tree
                 preview_lines = file_tree.split("\n")[:8]
                 for line in preview_lines:
                     self.logger.info(f"   {line}")
                 if len(file_tree.split("\n")) > 8:
-                    self.logger.info(
-                        f"   ... {len(file_tree.split('\n')) - 8} more lines"
-                    )
+                    self.logger.info(f"   ... {len(file_tree.split('\n')) - 8} more lines")
                 return file_tree
             else:
                 self.logger.warning("⚠️ Unable to extract file tree from initial plan")
@@ -275,7 +262,7 @@ project/
 └── setup.py
 """
 
-    def load_or_create_indexer_config(self, paper_dir: str) -> Dict[str, Any]:
+    def load_or_create_indexer_config(self, paper_dir: str) -> dict[str, Any]:
         """
         Load or create indexer configuration
 
@@ -290,7 +277,7 @@ project/
 
         try:
             if config_path.exists():
-                with open(config_path, "r", encoding="utf-8") as f:
+                with open(config_path, encoding="utf-8") as f:
                     config = yaml.safe_load(f)
 
                 # Update path configuration to current paper directory
@@ -406,9 +393,9 @@ project/
     async def run_indexing_workflow(
         self,
         paper_dir: str,
-        initial_plan_path: Optional[str] = None,
+        initial_plan_path: str | None = None,
         config_path: str = "mcp_agent.secrets.yaml",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run the complete code indexing workflow
 
@@ -429,16 +416,10 @@ project/
 
             # Step 2: Load target structure
             if os.path.exists(initial_plan_path):
-                self.logger.info(
-                    f"📐 Loading target structure from {initial_plan_path}"
-                )
-                target_structure = self.load_target_structure_from_plan(
-                    initial_plan_path
-                )
+                self.logger.info(f"📐 Loading target structure from {initial_plan_path}")
+                target_structure = self.load_target_structure_from_plan(initial_plan_path)
             else:
-                self.logger.warning(
-                    f"⚠️ Initial plan file does not exist: {initial_plan_path}"
-                )
+                self.logger.warning(f"⚠️ Initial plan file does not exist: {initial_plan_path}")
                 self.logger.info("📐 Using default target structure")
                 target_structure = self.get_default_target_structure()
 
@@ -478,40 +459,20 @@ project/
             if "file_analysis" in indexer_config:
                 file_config = indexer_config["file_analysis"]
                 self.indexer.supported_extensions = set(
-                    file_config.get(
-                        "supported_extensions", self.indexer.supported_extensions
-                    )
+                    file_config.get("supported_extensions", self.indexer.supported_extensions)
                 )
-                self.indexer.skip_directories = set(
-                    file_config.get("skip_directories", self.indexer.skip_directories)
-                )
-                self.indexer.max_file_size = file_config.get(
-                    "max_file_size", self.indexer.max_file_size
-                )
-                self.indexer.max_content_length = file_config.get(
-                    "max_content_length", self.indexer.max_content_length
-                )
+                self.indexer.skip_directories = set(file_config.get("skip_directories", self.indexer.skip_directories))
+                self.indexer.max_file_size = file_config.get("max_file_size", self.indexer.max_file_size)
+                self.indexer.max_content_length = file_config.get("max_content_length", self.indexer.max_content_length)
 
             if "llm" in indexer_config:
                 llm_config = indexer_config["llm"]
-                self.indexer.model_provider = llm_config.get(
-                    "model_provider", self.indexer.model_provider
-                )
-                self.indexer.llm_max_tokens = llm_config.get(
-                    "max_tokens", self.indexer.llm_max_tokens
-                )
-                self.indexer.llm_temperature = llm_config.get(
-                    "temperature", self.indexer.llm_temperature
-                )
-                self.indexer.request_delay = llm_config.get(
-                    "request_delay", self.indexer.request_delay
-                )
-                self.indexer.max_retries = llm_config.get(
-                    "max_retries", self.indexer.max_retries
-                )
-                self.indexer.retry_delay = llm_config.get(
-                    "retry_delay", self.indexer.retry_delay
-                )
+                self.indexer.model_provider = llm_config.get("model_provider", self.indexer.model_provider)
+                self.indexer.llm_max_tokens = llm_config.get("max_tokens", self.indexer.llm_max_tokens)
+                self.indexer.llm_temperature = llm_config.get("temperature", self.indexer.llm_temperature)
+                self.indexer.request_delay = llm_config.get("request_delay", self.indexer.request_delay)
+                self.indexer.max_retries = llm_config.get("max_retries", self.indexer.max_retries)
+                self.indexer.retry_delay = llm_config.get("retry_delay", self.indexer.retry_delay)
 
             if "relationships" in indexer_config:
                 rel_config = indexer_config["relationships"]
@@ -521,9 +482,7 @@ project/
                 self.indexer.high_confidence_threshold = rel_config.get(
                     "high_confidence_threshold", self.indexer.high_confidence_threshold
                 )
-                self.indexer.relationship_types = rel_config.get(
-                    "relationship_types", self.indexer.relationship_types
-                )
+                self.indexer.relationship_types = rel_config.get("relationship_types", self.indexer.relationship_types)
 
             if "performance" in indexer_config:
                 perf_config = indexer_config["performance"]
@@ -537,15 +496,11 @@ project/
                 self.indexer.enable_content_caching = perf_config.get(
                     "enable_content_caching", self.indexer.enable_content_caching
                 )
-                self.indexer.max_cache_size = perf_config.get(
-                    "max_cache_size", self.indexer.max_cache_size
-                )
+                self.indexer.max_cache_size = perf_config.get("max_cache_size", self.indexer.max_cache_size)
 
             if "debug" in indexer_config:
                 debug_config = indexer_config["debug"]
-                self.indexer.verbose_output = debug_config.get(
-                    "verbose_output", self.indexer.verbose_output
-                )
+                self.indexer.verbose_output = debug_config.get("verbose_output", self.indexer.verbose_output)
                 self.indexer.save_raw_responses = debug_config.get(
                     "save_raw_responses", self.indexer.save_raw_responses
                 )
@@ -555,27 +510,19 @@ project/
 
             if "output" in indexer_config:
                 output_config = indexer_config["output"]
-                self.indexer.generate_summary = output_config.get(
-                    "generate_summary", self.indexer.generate_summary
-                )
+                self.indexer.generate_summary = output_config.get("generate_summary", self.indexer.generate_summary)
                 self.indexer.generate_statistics = output_config.get(
                     "generate_statistics", self.indexer.generate_statistics
                 )
-                self.indexer.include_metadata = output_config.get(
-                    "include_metadata", self.indexer.include_metadata
-                )
+                self.indexer.include_metadata = output_config.get("include_metadata", self.indexer.include_metadata)
 
             self.logger.info("🔧 Indexer configuration completed")
             self.logger.info(f"🤖 Model provider: {self.indexer.model_provider}")
             self.logger.info(
                 f"⚡ Concurrent analysis: {'Enabled' if self.indexer.enable_concurrent_analysis else 'Disabled'}"
             )
-            self.logger.info(
-                f"🗄️ Content caching: {'Enabled' if self.indexer.enable_content_caching else 'Disabled'}"
-            )
-            self.logger.info(
-                f"🔍 Pre-filtering: {'Enabled' if self.indexer.enable_pre_filtering else 'Disabled'}"
-            )
+            self.logger.info(f"🗄️ Content caching: {'Enabled' if self.indexer.enable_content_caching else 'Disabled'}")
+            self.logger.info(f"🔍 Pre-filtering: {'Enabled' if self.indexer.enable_pre_filtering else 'Disabled'}")
 
             self.logger.info("=" * 60)
             self.logger.info("🚀 Starting code indexing process...")
@@ -603,7 +550,7 @@ project/
 
                     for file_path in output_files.values():
                         try:
-                            with open(file_path, "r", encoding="utf-8") as f:
+                            with open(file_path, encoding="utf-8") as f:
                                 index_data = json.load(f)
                                 relationships = index_data.get("relationships", [])
                                 total_relationships += len(relationships)
@@ -611,21 +558,14 @@ project/
                                     [
                                         r
                                         for r in relationships
-                                        if r.get("confidence_score", 0)
-                                        > self.indexer.high_confidence_threshold
+                                        if r.get("confidence_score", 0) > self.indexer.high_confidence_threshold
                                     ]
                                 )
                         except Exception as e:
-                            self.logger.warning(
-                                f"   ⚠️ Unable to load statistics from {file_path}: {e}"
-                            )
+                            self.logger.warning(f"   ⚠️ Unable to load statistics from {file_path}: {e}")
 
-                    self.logger.info(
-                        f"   🔗 Total relationships found: {total_relationships}"
-                    )
-                    self.logger.info(
-                        f"   ⭐ High confidence relationships: {high_confidence_relationships}"
-                    )
+                    self.logger.info(f"   🔗 Total relationships found: {total_relationships}")
+                    self.logger.info(f"   ⭐ High confidence relationships: {high_confidence_relationships}")
                     self.logger.info(
                         f"   📊 Average relationships per repository: {total_relationships / len(output_files) if output_files else 0:.1f}"
                     )
@@ -681,10 +621,10 @@ project/
 # Convenience function for direct workflow invocation
 async def run_codebase_indexing(
     paper_dir: str,
-    initial_plan_path: Optional[str] = None,
+    initial_plan_path: str | None = None,
     config_path: str = "mcp_agent.secrets.yaml",
     logger=None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convenience function to run codebase indexing
 
@@ -721,9 +661,7 @@ async def main():
     initial_plan_path = os.path.join(paper_dir, "initial_plan.txt")
 
     # Run workflow
-    result = await run_codebase_indexing(
-        paper_dir=paper_dir, initial_plan_path=initial_plan_path, logger=logger
-    )
+    result = await run_codebase_indexing(paper_dir=paper_dir, initial_plan_path=initial_plan_path, logger=logger)
 
     logger.info(f"Index result: {result}")
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 超简化LLM响应日志记录器
 专注于记录LLM回复的核心内容，配置简单易用
@@ -7,10 +6,11 @@
 
 import json
 import os
-import yaml
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
+
+import yaml
 
 
 class SimpleLLMLogger:
@@ -34,16 +34,16 @@ class SimpleLLMLogger:
         self.enabled = True
         self._setup_logger()
 
-    def _load_config(self, config_path: str) -> Dict[str, Any]:
+    def _load_config(self, config_path: str) -> dict[str, Any]:
         """加载配置文件"""
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 return yaml.safe_load(f)
         except Exception as e:
             print(f"⚠️ 配置文件加载失败: {e}，使用默认配置")
             return self._get_default_config()
 
-    def _get_default_config(self) -> Dict[str, Any]:
+    def _get_default_config(self) -> dict[str, Any]:
         """获取默认配置"""
         return {
             "llm_logger": {
@@ -66,12 +66,8 @@ class SimpleLLMLogger:
 
         # 生成日志文件名
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename_pattern = self.llm_config.get(
-            "filename_pattern", "llm_responses_{timestamp}.jsonl"
-        )
-        self.log_file = os.path.join(
-            log_dir, filename_pattern.format(timestamp=timestamp)
-        )
+        filename_pattern = self.llm_config.get("filename_pattern", "llm_responses_{timestamp}.jsonl")
+        self.log_file = os.path.join(log_dir, filename_pattern.format(timestamp=timestamp))
 
         print(f"📝 LLM响应日志: {self.log_file}")
 
@@ -115,7 +111,7 @@ class SimpleLLMLogger:
 
         return True
 
-    def _build_entry(self, content: str, model: str, agent: str, extra: Dict) -> Dict:
+    def _build_entry(self, content: str, model: str, agent: str, extra: dict) -> dict:
         """构建日志条目"""
         log_level = self.llm_config.get("log_level", "basic")
 
@@ -141,7 +137,7 @@ class SimpleLLMLogger:
                 entry["session"] = extra["session_id"]
             return entry
 
-    def _write_log(self, entry: Dict):
+    def _write_log(self, entry: dict):
         """写入日志文件"""
         output_format = self.llm_config.get("output_format", "json")
 

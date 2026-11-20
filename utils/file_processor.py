@@ -5,7 +5,6 @@ File processing utilities for handling paper files and related operations.
 import json
 import os
 import re
-from typing import Dict, List, Optional, Union
 
 
 class FileProcessor:
@@ -14,7 +13,7 @@ class FileProcessor:
     """
 
     @staticmethod
-    def extract_file_path(file_info: Union[str, Dict]) -> Optional[str]:
+    def extract_file_path(file_info: str | dict) -> str | None:
         """
         Extract paper directory path from the input information.
 
@@ -28,9 +27,7 @@ class FileProcessor:
             # Handle direct file path input
             if isinstance(file_info, str):
                 # Check if it's a file path (existing or not)
-                if file_info.endswith(
-                    (".md", ".pdf", ".txt", ".docx", ".doc", ".html", ".htm")
-                ):
+                if file_info.endswith((".md", ".pdf", ".txt", ".docx", ".doc", ".html", ".htm")):
                     # It's a file path, return the directory
                     return os.path.dirname(os.path.abspath(file_info))
                 elif os.path.exists(file_info):
@@ -47,9 +44,7 @@ class FileProcessor:
                     info_dict = FileProcessor.extract_json_from_text(file_info)
                     if not info_dict:
                         # If not JSON and doesn't look like a file path, raise error
-                        raise ValueError(
-                            f"Input is neither a valid file path nor JSON: {file_info}"
-                        )
+                        raise ValueError(f"Input is neither a valid file path nor JSON: {file_info}")
             else:
                 info_dict = file_info
 
@@ -71,7 +66,7 @@ class FileProcessor:
             raise ValueError(f"Invalid input format: {str(e)}")
 
     @staticmethod
-    def find_markdown_file(directory: str) -> Optional[str]:
+    def find_markdown_file(directory: str) -> str | None:
         """
         Find the first markdown file in the given directory.
 
@@ -90,7 +85,7 @@ class FileProcessor:
         return None
 
     @staticmethod
-    def parse_markdown_sections(content: str) -> List[Dict[str, Union[str, int, List]]]:
+    def parse_markdown_sections(content: str) -> list[dict[str, str | int | list]]:
         """
         Parse markdown content and organize it by sections based on headers.
 
@@ -141,7 +136,7 @@ class FileProcessor:
         return FileProcessor._organize_sections(sections)
 
     @staticmethod
-    def _organize_sections(sections: List[Dict]) -> List[Dict]:
+    def _organize_sections(sections: list[dict]) -> list[dict]:
         """
         Organize sections into a hierarchical structure based on their levels.
 
@@ -190,24 +185,26 @@ class FileProcessor:
             # Check if file is actually a PDF by reading the first few bytes
             with open(file_path, "rb") as f:
                 header = f.read(8)
-                if header.startswith(b'%PDF'):
-                    raise IOError(f"File {file_path} is a PDF file, not a text file. Please convert it to markdown format or use PDF processing tools.")
+                if header.startswith(b"%PDF"):
+                    raise OSError(
+                        f"File {file_path} is a PDF file, not a text file. Please convert it to markdown format or use PDF processing tools."
+                    )
 
             # Read file content
             # Note: Using async with would be better for large files
             # but for simplicity and compatibility, using regular file reading
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
             return content
 
         except UnicodeDecodeError as e:
-            raise IOError(f"Error reading file {file_path}: File encoding is not UTF-8. Original error: {str(e)}")
+            raise OSError(f"Error reading file {file_path}: File encoding is not UTF-8. Original error: {str(e)}")
         except Exception as e:
-            raise IOError(f"Error reading file {file_path}: {str(e)}")
+            raise OSError(f"Error reading file {file_path}: {str(e)}")
 
     @staticmethod
-    def format_section_content(section: Dict) -> str:
+    def format_section_content(section: dict) -> str:
         """
         Format a section's content with standardized spacing and structure.
 
@@ -240,7 +237,7 @@ class FileProcessor:
         return formatted
 
     @staticmethod
-    def standardize_output(sections: List[Dict]) -> str:
+    def standardize_output(sections: list[dict]) -> str:
         """
         Convert structured sections into a standardized string format.
 
@@ -260,9 +257,7 @@ class FileProcessor:
         return "\n".join(output)
 
     @classmethod
-    async def process_file_input(
-        cls, file_input: Union[str, Dict], base_dir: str = None
-    ) -> Dict:
+    async def process_file_input(cls, file_input: str | dict, base_dir: str = None) -> dict:
         """
         Process file input information and return the structured content.
 
@@ -317,9 +312,7 @@ class FileProcessor:
                             if os.path.isdir(paper_dir):
                                 file_path = cls.find_markdown_file(paper_dir)
                                 if not file_path:
-                                    raise ValueError(
-                                        f"No markdown file found in directory: {paper_dir}"
-                                    )
+                                    raise ValueError(f"No markdown file found in directory: {paper_dir}")
                     else:
                         raise ValueError("Invalid JSON format: missing paper_path")
                 except json.JSONDecodeError:
@@ -333,24 +326,18 @@ class FileProcessor:
                             if os.path.isdir(paper_dir):
                                 file_path = cls.find_markdown_file(paper_dir)
                                 if not file_path:
-                                    raise ValueError(
-                                        f"No markdown file found in directory: {paper_dir}"
-                                    )
+                                    raise ValueError(f"No markdown file found in directory: {paper_dir}")
                     else:
                         # 不是JSON，按文件路径处理
                         # Check if it's a file path (existing or not)
-                        if file_input.endswith(
-                            (".md", ".pdf", ".txt", ".docx", ".doc", ".html", ".htm")
-                        ):
+                        if file_input.endswith((".md", ".pdf", ".txt", ".docx", ".doc", ".html", ".htm")):
                             if os.path.exists(file_input):
                                 file_path = file_input
                             else:
                                 # File doesn't exist, try to find markdown in the directory
                                 file_path = cls.find_markdown_file(paper_dir)
                                 if not file_path:
-                                    raise ValueError(
-                                        f"No markdown file found in directory: {paper_dir}"
-                                    )
+                                    raise ValueError(f"No markdown file found in directory: {paper_dir}")
                         elif os.path.exists(file_input):
                             if os.path.isfile(file_input):
                                 file_path = file_input
@@ -358,9 +345,7 @@ class FileProcessor:
                                 # If it's a directory, find the markdown file
                                 file_path = cls.find_markdown_file(file_input)
                                 if not file_path:
-                                    raise ValueError(
-                                        f"No markdown file found in directory: {file_input}"
-                                    )
+                                    raise ValueError(f"No markdown file found in directory: {file_input}")
                         else:
                             raise ValueError(f"Invalid input: {file_input}")
             else:
@@ -372,9 +357,7 @@ class FileProcessor:
                     if os.path.isdir(paper_dir):
                         file_path = cls.find_markdown_file(paper_dir)
                         if not file_path:
-                            raise ValueError(
-                                f"No markdown file found in directory: {paper_dir}"
-                            )
+                            raise ValueError(f"No markdown file found in directory: {paper_dir}")
 
             if not file_path:
                 raise ValueError("No valid file path found")
@@ -399,7 +382,7 @@ class FileProcessor:
             raise ValueError(f"Error processing file input: {str(e)}")
 
     @staticmethod
-    def extract_json_from_text(text: str) -> Optional[Dict]:
+    def extract_json_from_text(text: str) -> dict | None:
         """
         Extract JSON from text that may contain markdown code blocks or other content.
 

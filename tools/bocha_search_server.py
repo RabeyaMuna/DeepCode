@@ -1,6 +1,6 @@
+import json
 import os
 import sys
-import json
 
 import httpx
 from dotenv import load_dotenv
@@ -40,9 +40,7 @@ If the API key is missing or invalid, appropriate error messages will be returne
 
 
 @server.tool()
-async def bocha_web_search(
-    query: str, freshness: str = "noLimit", count: int = 10
-) -> str:
+async def bocha_web_search(query: str, freshness: str = "noLimit", count: int = 10) -> str:
     """Search with Bocha Web Search and get enhanced search details from billions of web documents,
     including page titles, urls, summaries, site names, site icons, publication dates, image links, and more.
 
@@ -55,10 +53,7 @@ async def bocha_web_search(
     boch_api_key = os.environ.get("BOCHA_API_KEY", "")
 
     if not boch_api_key:
-        return (
-            "Error: Bocha API key is not configured. Please set the "
-            "BOCHA_API_KEY environment variable."
-        )
+        return "Error: Bocha API key is not configured. Please set the " "BOCHA_API_KEY environment variable."
 
     # Endpoint
     endpoint = "https://api.bochaai.com/v1/web-search?utm_source=bocha-mcp-local"
@@ -77,9 +72,7 @@ async def bocha_web_search(
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                endpoint, headers=headers, json=payload, timeout=10.0
-            )
+            response = await client.post(endpoint, headers=headers, json=payload, timeout=10.0)
 
             response.raise_for_status()
             resp = response.json()
@@ -112,9 +105,7 @@ async def bocha_web_search(
 
 
 @server.tool()
-async def bocha_ai_search(
-    query: str, freshness: str = "noLimit", count: int = 10
-) -> str:
+async def bocha_ai_search(query: str, freshness: str = "noLimit", count: int = 10) -> str:
     """Search with Bocha AI Search, recognizes the semantics of search terms
     and additionally returns structured modal cards with content from vertical domains.
 
@@ -127,10 +118,7 @@ async def bocha_ai_search(
     boch_api_key = os.environ.get("BOCHA_API_KEY", "")
 
     if not boch_api_key:
-        return (
-            "Error: Bocha API key is not configured. Please set the "
-            "BOCHA_API_KEY environment variable."
-        )
+        return "Error: Bocha API key is not configured. Please set the " "BOCHA_API_KEY environment variable."
 
     # Endpoint
     endpoint = "https://api.bochaai.com/v1/ai-search?utm_source=bocha-mcp-local"
@@ -150,9 +138,7 @@ async def bocha_ai_search(
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                endpoint, headers=headers, json=payload, timeout=10.0
-            )
+            response = await client.post(endpoint, headers=headers, json=payload, timeout=10.0)
 
             response.raise_for_status()
             response = response.json()
@@ -176,10 +162,7 @@ async def bocha_ai_search(
                                     f"Published date: {item['datePublished']}\n"
                                     f"Site name: {item['siteName']}"
                                 )
-                    elif (
-                        message["content_type"] != "image"
-                        and message["content"] != "{}"
-                    ):
+                    elif message["content_type"] != "image" and message["content"] != "{}":
                         results.append(message["content"])
 
             if not results:

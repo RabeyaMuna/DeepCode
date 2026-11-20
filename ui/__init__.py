@@ -16,9 +16,9 @@ __version__ = "1.0.0"
 __author__ = "DeepCode Team"
 
 # Import main components
-from .layout import main_layout
-from .components import display_header, display_features, display_status
+from .components import display_features, display_header, display_status
 from .handlers import initialize_session_state
+from .layout import main_layout
 from .styles import get_main_styles
 
 # Import application main function
@@ -26,8 +26,8 @@ try:
     from .streamlit_app import main as streamlit_main
 except ImportError:
     # Fallback to absolute import if relative import fails
-    import sys
     import os
+    import sys
 
     sys.path.insert(0, os.path.dirname(__file__))
     from streamlit_app import main as streamlit_main

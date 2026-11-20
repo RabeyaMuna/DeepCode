@@ -6,7 +6,6 @@ GitHub Repository Downloader MCP Tool using FastMCP
 import asyncio
 import os
 import re
-from typing import Dict, List, Optional
 from pathlib import Path
 
 from mcp.server import FastMCP
@@ -19,7 +18,7 @@ class GitHubURLExtractor:
     """提取GitHub URL的工具类"""
 
     @staticmethod
-    def extract_github_urls(text: str) -> List[str]:
+    def extract_github_urls(text: str) -> list[str]:
         """从文本中提取GitHub URLs"""
         patterns = [
             # 标准HTTPS URL
@@ -45,16 +44,11 @@ class GitHubURLExtractor:
                     url = match
                 else:
                     # 处理短格式 (owner/repo) - 添加更多验证
-                    if "/" in match and not any(
-                        x in match for x in ["./", "../", "deepcode_lab", "tools"]
-                    ):
+                    if "/" in match and not any(x in match for x in ["./", "../", "deepcode_lab", "tools"]):
                         parts = match.split("/")
                         if (
                             len(parts) == 2
-                            and all(
-                                part.replace("-", "").replace("_", "").isalnum()
-                                for part in parts
-                            )
+                            and all(part.replace("-", "").replace("_", "").isalnum() for part in parts)
                             and not any(part.startswith(".") for part in parts)
                         ):
                             url = f"https://github.com/{match}"
@@ -76,7 +70,7 @@ class GitHubURLExtractor:
         return list(set(urls))  # 去重
 
     @staticmethod
-    def extract_target_path(text: str) -> Optional[str]:
+    def extract_target_path(text: str) -> str | None:
         """从文本中提取目标路径"""
         # 路径指示词模式
         patterns = [
@@ -130,7 +124,7 @@ async def check_git_installed() -> bool:
         return False
 
 
-async def clone_repository(repo_url: str, target_path: str) -> Dict[str, any]:
+async def clone_repository(repo_url: str, target_path: str) -> dict[str, any]:
     """执行git clone命令"""
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -196,17 +190,13 @@ async def download_github_repo(instruction: str) -> str:
                     final_path = target_path
                     # 如果目标路径是目录，添加仓库名
                     if os.path.basename(target_path) == "" or target_path.endswith("/"):
-                        final_path = os.path.join(
-                            target_path, extractor.infer_repo_name(url)
-                        )
+                        final_path = os.path.join(target_path, extractor.infer_repo_name(url))
                 else:
                     # 如果是相对路径，保持相对路径
                     final_path = target_path
                     # 如果目标路径是目录，添加仓库名
                     if os.path.basename(target_path) == "" or target_path.endswith("/"):
-                        final_path = os.path.join(
-                            target_path, extractor.infer_repo_name(url)
-                        )
+                        final_path = os.path.join(target_path, extractor.infer_repo_name(url))
             else:
                 final_path = extractor.infer_repo_name(url)
 
@@ -223,9 +213,7 @@ async def download_github_repo(instruction: str) -> str:
 
             # 检查目标路径是否已存在
             if os.path.exists(final_path):
-                results.append(
-                    f"❌ Failed to download {url}: Target path already exists: {final_path}"
-                )
+                results.append(f"❌ Failed to download {url}: Target path already exists: {final_path}")
                 continue
 
             # 执行克隆
@@ -283,9 +271,7 @@ async def parse_github_urls(text: str) -> str:
 
 
 @mcp.tool()
-async def git_clone(
-    repo_url: str, target_path: Optional[str] = None, branch: Optional[str] = None
-) -> str:
+async def git_clone(repo_url: str, target_path: str | None = None, branch: str | None = None) -> str:
     """
     Clone a specific GitHub repository.
 

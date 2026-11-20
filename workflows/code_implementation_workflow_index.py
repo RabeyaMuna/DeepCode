@@ -16,23 +16,25 @@ import logging
 import os
 import sys
 import time
-import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any
+
+import yaml
 
 # MCP Agent imports
 from mcp_agent.agents.agent import Agent
 
 # Local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from prompts.code_prompts import STRUCTURE_GENERATOR_PROMPT
+from config.mcp_tool_definitions_index import get_mcp_tools
 from prompts.code_prompts import (
     PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT_INDEX,
+    STRUCTURE_GENERATOR_PROMPT,
 )
+from utils.llm_utils import get_default_models, get_preferred_llm_class
 from workflows.agents import CodeImplementationAgent
 from workflows.agents.memory_agent_concise import ConciseMemoryAgent
-from config.mcp_tool_definitions_index import get_mcp_tools
-from utils.llm_utils import get_preferred_llm_class, get_default_models
+
 # DialogueLogger removed - no longer needed
 
 
@@ -56,14 +58,12 @@ class CodeImplementationWorkflowWithIndex:
         self.default_models = get_default_models("mcp_agent.config.yaml")
         self.logger = self._create_logger()
         self.mcp_agent = None
-        self.enable_read_tools = (
-            True  # Default value, will be overridden by run_workflow parameter
-        )
+        self.enable_read_tools = True  # Default value, will be overridden by run_workflow parameter
 
-    def _load_api_config(self) -> Dict[str, Any]:
+    def _load_api_config(self) -> dict[str, Any]:
         """Load API configuration from YAML file"""
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with open(self.config_path, encoding="utf-8") as f:
                 return yaml.safe_load(f)
         except Exception as e:
             raise Exception(f"Failed to load API config: {e}")
@@ -79,11 +79,9 @@ class CodeImplementationWorkflowWithIndex:
         """Read implementation plan file"""
         plan_path = Path(plan_file_path)
         if not plan_path.exists():
-            raise FileNotFoundError(
-                f"Implementation plan file not found: {plan_file_path}"
-            )
+            raise FileNotFoundError(f"Implementation plan file not found: {plan_file_path}")
 
-        with open(plan_path, "r", encoding="utf-8") as f:
+        with open(plan_path, encoding="utf-8") as f:
             return f.read()
 
     def _check_file_tree_exists(self, target_directory: str) -> bool:
@@ -96,7 +94,7 @@ class CodeImplementationWorkflowWithIndex:
     async def run_workflow(
         self,
         plan_file_path: str,
-        target_directory: Optional[str] = None,
+        target_directory: str | None = None,
         pure_code_mode: bool = False,
         enable_read_tools: bool = True,
     ):
@@ -119,9 +117,7 @@ class CodeImplementationWorkflowWithIndex:
             self.logger.info(f"📄 Plan file: {plan_file_path}")
             self.logger.info(f"📂 Plan file parent: {target_directory}")
             self.logger.info(f"🎯 Code directory (MCP workspace): {code_directory}")
-            self.logger.info(
-                f"⚙️  Read tools: {'ENABLED' if self.enable_read_tools else 'DISABLED'}"
-            )
+            self.logger.info(f"⚙️  Read tools: {'ENABLED' if self.enable_read_tools else 'DISABLED'}")
             self.logger.info("=" * 80)
 
             results = {}
@@ -132,9 +128,7 @@ class CodeImplementationWorkflowWithIndex:
                 results["file_tree"] = "Already exists, skipped creation"
             else:
                 self.logger.info("Creating file tree...")
-                results["file_tree"] = await self.create_file_structure(
-                    plan_content, target_directory
-                )
+                results["file_tree"] = await self.create_file_structure(plan_content, target_directory)
 
             # Code implementation
             if pure_code_mode:
@@ -163,9 +157,7 @@ class CodeImplementationWorkflowWithIndex:
         finally:
             await self._cleanup_mcp_agent()
 
-    async def create_file_structure(
-        self, plan_content: str, target_directory: str
-    ) -> str:
+    async def create_file_structure(self, plan_content: str, target_directory: str) -> str:
         """Create file tree structure based on implementation plan"""
         self.logger.info("Starting file tree creation...")
 
@@ -176,9 +168,7 @@ class CodeImplementationWorkflowWithIndex:
         )
 
         async with structure_agent:
-            creator = await structure_agent.attach_llm(
-                get_preferred_llm_class(self.config_path)
-            )
+            creator = await structure_agent.attach_llm(get_preferred_llm_class(self.config_path))
 
             message = f"""Analyze the following implementation plan and generate shell commands to create the file tree structure.
 
@@ -203,9 +193,7 @@ Requirements:
             self.logger.info("File tree structure creation completed")
             return result
 
-    async def implement_code_pure(
-        self, plan_content: str, target_directory: str, code_directory: str = None
-    ) -> str:
+    async def implement_code_pure(self, plan_content: str, target_directory: str, code_directory: str = None) -> str:
         """Pure code implementation - focus on code writing without testing"""
         self.logger.info("Starting pure code implementation (no testing)...")
 
@@ -216,9 +204,7 @@ Requirements:
         self.logger.info(f"🎯 Using code directory (MCP workspace): {code_directory}")
 
         if not os.path.exists(code_directory):
-            raise FileNotFoundError(
-                "File tree structure not found, please run file tree creation first"
-            )
+            raise FileNotFoundError("File tree structure not found, please run file tree creation first")
 
         try:
             client, client_type = await self._initialize_llm_client()
@@ -295,20 +281,14 @@ Requirements:
         max_time = 2400  # 40 minutes
 
         # Initialize specialized agents
-        code_agent = CodeImplementationAgent(
-            self.mcp_agent, self.logger, self.enable_read_tools
-        )
+        code_agent = CodeImplementationAgent(self.mcp_agent, self.logger, self.enable_read_tools)
         memory_agent = ConciseMemoryAgent(plan_content, self.logger, target_directory)
 
         # Log read tools configuration
         read_tools_status = "ENABLED" if self.enable_read_tools else "DISABLED"
-        self.logger.info(
-            f"🔧 Read tools (read_file, read_code_mem): {read_tools_status}"
-        )
+        self.logger.info(f"🔧 Read tools (read_file, read_code_mem): {read_tools_status}")
         if not self.enable_read_tools:
-            self.logger.info(
-                "🚫 No read mode: read_file and read_code_mem tools will be skipped"
-            )
+            self.logger.info("🚫 No read mode: read_file and read_code_mem tools will be skipped")
 
         # Connect code agent with memory agent for summary generation
         # Note: Concise memory agent doesn't need LLM client for summary generation
@@ -339,9 +319,7 @@ Requirements:
             # Round logging removed
 
             # Call LLM
-            response = await self._call_llm_with_tools(
-                client, client_type, current_system_message, messages, tools
-            )
+            response = await self._call_llm_with_tools(client, client_type, current_system_message, messages, tools)
 
             response_content = response.get("content", "").strip()
             if not response_content:
@@ -351,9 +329,7 @@ Requirements:
 
             # Handle tool calls
             if response.get("tool_calls"):
-                tool_results = await code_agent.execute_tool_calls(
-                    response["tool_calls"]
-                )
+                tool_results = await code_agent.execute_tool_calls(response["tool_calls"])
 
                 # Record essential tool results in concise memory agent
                 for tool_call, tool_result in zip(response["tool_calls"], tool_results):
@@ -378,9 +354,7 @@ Requirements:
                 messages.append({"role": "user", "content": compiled_response})
 
                 # NEW LOGIC: Apply memory optimization immediately after write_file detection
-                if memory_agent.should_trigger_memory_optimization(
-                    messages, code_agent.get_files_implemented_count()
-                ):
+                if memory_agent.should_trigger_memory_optimization(messages, code_agent.get_files_implemented_count()):
                     # Apply concise memory optimization
                     files_implemented_count = code_agent.get_files_implemented_count()
                     current_system_message = code_agent.get_system_prompt()
@@ -399,9 +373,7 @@ Requirements:
             if code_agent.is_in_analysis_loop():
                 analysis_loop_guidance = code_agent.get_analysis_loop_guidance()
                 messages.append({"role": "user", "content": analysis_loop_guidance})
-                self.logger.warning(
-                    "Analysis loop detected and corrective guidance provided"
-                )
+                self.logger.warning("Analysis loop detected and corrective guidance provided")
 
             # Record file implementations in memory agent (for the current round)
             for file_info in code_agent.get_implementation_summary()["completed_files"]:
@@ -428,9 +400,7 @@ Requirements:
 
             # Emergency trim if too long
             if len(messages) > 50:
-                self.logger.warning(
-                    "Emergency message trim - applying concise memory optimization"
-                )
+                self.logger.warning("Emergency message trim - applying concise memory optimization")
 
                 current_system_message = code_agent.get_system_prompt()
                 files_implemented_count = code_agent.get_files_implemented_count()
@@ -454,14 +424,10 @@ Requirements:
             )
 
             await self.mcp_agent.__aenter__()
-            llm = await self.mcp_agent.attach_llm(
-                get_preferred_llm_class(self.config_path)
-            )
+            llm = await self.mcp_agent.attach_llm(get_preferred_llm_class(self.config_path))
 
             # Set workspace to the target code directory
-            workspace_result = await self.mcp_agent.call_tool(
-                "set_workspace", {"workspace_path": code_directory}
-            )
+            workspace_result = await self.mcp_agent.call_tool("set_workspace", {"workspace_path": code_directory})
             self.logger.info(f"Workspace setup result: {workspace_result}")
 
             return llm
@@ -505,9 +471,7 @@ Requirements:
                     max_tokens=10,
                     messages=[{"role": "user", "content": "test"}],
                 )
-                self.logger.info(
-                    f"Using Anthropic API with model: {self.default_models['anthropic']}"
-                )
+                self.logger.info(f"Using Anthropic API with model: {self.default_models['anthropic']}")
                 return client, "anthropic"
             except Exception as e:
                 self.logger.warning(f"Anthropic API unavailable: {e}")
@@ -544,47 +508,33 @@ Requirements:
                         )
                     else:
                         raise
-                self.logger.info(
-                    f"Using OpenAI API with model: {self.default_models['openai']}"
-                )
+                self.logger.info(f"Using OpenAI API with model: {self.default_models['openai']}")
                 if base_url:
                     self.logger.info(f"Using custom base URL: {base_url}")
                 return client, "openai"
             except Exception as e:
                 self.logger.warning(f"OpenAI API unavailable: {e}")
 
-        raise ValueError(
-            "No available LLM API - please check your API keys in configuration"
-        )
+        raise ValueError("No available LLM API - please check your API keys in configuration")
 
-    async def _call_llm_with_tools(
-        self, client, client_type, system_message, messages, tools, max_tokens=8192
-    ):
+    async def _call_llm_with_tools(self, client, client_type, system_message, messages, tools, max_tokens=8192):
         """Call LLM with tools"""
         try:
             if client_type == "anthropic":
-                return await self._call_anthropic_with_tools(
-                    client, system_message, messages, tools, max_tokens
-                )
+                return await self._call_anthropic_with_tools(client, system_message, messages, tools, max_tokens)
             elif client_type == "openai":
-                return await self._call_openai_with_tools(
-                    client, system_message, messages, tools, max_tokens
-                )
+                return await self._call_openai_with_tools(client, system_message, messages, tools, max_tokens)
             else:
                 raise ValueError(f"Unsupported client type: {client_type}")
         except Exception as e:
             self.logger.error(f"LLM call failed: {e}")
             raise
 
-    async def _call_anthropic_with_tools(
-        self, client, system_message, messages, tools, max_tokens
-    ):
+    async def _call_anthropic_with_tools(self, client, system_message, messages, tools, max_tokens):
         """Call Anthropic API"""
         validated_messages = self._validate_messages(messages)
         if not validated_messages:
-            validated_messages = [
-                {"role": "user", "content": "Please continue implementing code"}
-            ]
+            validated_messages = [{"role": "user", "content": "Please continue implementing code"}]
 
         try:
             response = await client.messages.create(
@@ -606,15 +556,11 @@ Requirements:
             if block.type == "text":
                 content += block.text
             elif block.type == "tool_use":
-                tool_calls.append(
-                    {"id": block.id, "name": block.name, "input": block.input}
-                )
+                tool_calls.append({"id": block.id, "name": block.name, "input": block.input})
 
         return {"content": content, "tool_calls": tool_calls}
 
-    async def _call_openai_with_tools(
-        self, client, system_message, messages, tools, max_tokens
-    ):
+    async def _call_openai_with_tools(self, client, system_message, messages, tools, max_tokens):
         """Call OpenAI API"""
         openai_tools = []
         for tool in tools:
@@ -671,24 +617,22 @@ Requirements:
 
     # ==================== 5. Tools and Utility Methods (Utility Layer) ====================
 
-    def _validate_messages(self, messages: List[Dict]) -> List[Dict]:
+    def _validate_messages(self, messages: list[dict]) -> list[dict]:
         """Validate and clean message list"""
         valid_messages = []
         for msg in messages:
             content = msg.get("content", "").strip()
             if content:
-                valid_messages.append(
-                    {"role": msg.get("role", "user"), "content": content}
-                )
+                valid_messages.append({"role": msg.get("role", "user"), "content": content})
             else:
                 self.logger.warning(f"Skipping empty message: {msg}")
         return valid_messages
 
-    def _prepare_mcp_tool_definitions(self) -> List[Dict[str, Any]]:
+    def _prepare_mcp_tool_definitions(self) -> list[dict[str, Any]]:
         """Prepare tool definitions in Anthropic API standard format"""
         return get_mcp_tools("code_implementation")
 
-    def _check_tool_results_for_errors(self, tool_results: List[Dict]) -> bool:
+    def _check_tool_results_for_errors(self, tool_results: list[dict]) -> bool:
         """Check tool results for errors"""
         for result in tool_results:
             try:
@@ -762,7 +706,7 @@ Requirements:
 
 🚨 **Critical:** Always verify completion status first, then use appropriate tools - not just explanations!"""
 
-    def _compile_user_response(self, tool_results: List[Dict], guidance: str) -> str:
+    def _compile_user_response(self, tool_results: list[dict], guidance: str) -> str:
         """Compile tool results and guidance into a single user response"""
         response_parts = []
 
@@ -771,9 +715,7 @@ Requirements:
             for tool_result in tool_results:
                 tool_name = tool_result["tool_name"]
                 result_content = tool_result["result"]
-                response_parts.append(
-                    f"```\nTool: {tool_name}\nResult: {result_content}\n```"
-                )
+                response_parts.append(f"```\nTool: {tool_name}\nResult: {result_content}\n```")
 
         if guidance:
             response_parts.append("\n" + guidance)
@@ -792,19 +734,11 @@ Requirements:
         """Generate final report using concise agent statistics"""
         try:
             code_stats = code_agent.get_implementation_statistics()
-            memory_stats = memory_agent.get_memory_statistics(
-                code_stats["files_implemented_count"]
-            )
+            memory_stats = memory_agent.get_memory_statistics(code_stats["files_implemented_count"])
 
             if self.mcp_agent:
-                history_result = await self.mcp_agent.call_tool(
-                    "get_operation_history", {"last_n": 30}
-                )
-                history_data = (
-                    json.loads(history_result)
-                    if isinstance(history_result, str)
-                    else history_result
-                )
+                history_result = await self.mcp_agent.call_tool("get_operation_history", {"last_n": 30})
+                history_data = json.loads(history_result) if isinstance(history_result, str) else history_result
             else:
                 history_data = {"total_operations": 0, "history": []}
 

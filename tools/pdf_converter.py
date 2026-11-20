@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import argparse
 import logging
+import platform
+import shutil
 import subprocess
 import tempfile
-import shutil
-import platform
 from pathlib import Path
-from typing import Union, Optional, Dict, Any
+from typing import Any
 
 
 class PDFConverter:
@@ -41,9 +41,7 @@ class PDFConverter:
         pass
 
     @staticmethod
-    def convert_office_to_pdf(
-        doc_path: Union[str, Path], output_dir: Optional[str] = None
-    ) -> Path:
+    def convert_office_to_pdf(doc_path: str | Path, output_dir: str | None = None) -> Path:
         """
         Convert Office document (.doc, .docx, .ppt, .pptx, .xls, .xlsx) to PDF.
         Requires LibreOffice to be installed.
@@ -73,10 +71,10 @@ class PDFConverter:
 
             # Check if LibreOffice is available
             libreoffice_available = False
-            working_libreoffice_cmd: Optional[str] = None
+            working_libreoffice_cmd: str | None = None
 
             # Prepare subprocess parameters to hide console window on Windows
-            subprocess_kwargs: Dict[str, Any] = {
+            subprocess_kwargs: dict[str, Any] = {
                 "capture_output": True,
                 "check": True,
                 "timeout": 10,
@@ -86,14 +84,10 @@ class PDFConverter:
 
             # Hide console window on Windows
             if platform.system() == "Windows":
-                subprocess_kwargs["creationflags"] = (
-                    0x08000000  # subprocess.CREATE_NO_WINDOW
-                )
+                subprocess_kwargs["creationflags"] = 0x08000000  # subprocess.CREATE_NO_WINDOW
 
             try:
-                result = subprocess.run(
-                    ["libreoffice", "--version"], **subprocess_kwargs
-                )
+                result = subprocess.run(["libreoffice", "--version"], **subprocess_kwargs)
                 libreoffice_available = True
                 working_libreoffice_cmd = "libreoffice"
                 logging.info(f"LibreOffice detected: {result.stdout.strip()}")  # type: ignore
@@ -163,7 +157,7 @@ class PDFConverter:
                         ]
 
                         # Prepare conversion subprocess parameters
-                        convert_subprocess_kwargs: Dict[str, Any] = {
+                        convert_subprocess_kwargs: dict[str, Any] = {
                             "capture_output": True,
                             "text": True,
                             "timeout": 60,  # 60 second timeout
@@ -173,30 +167,21 @@ class PDFConverter:
 
                         # Hide console window on Windows
                         if platform.system() == "Windows":
-                            convert_subprocess_kwargs["creationflags"] = (
-                                0x08000000  # subprocess.CREATE_NO_WINDOW
-                            )
+                            convert_subprocess_kwargs["creationflags"] = 0x08000000  # subprocess.CREATE_NO_WINDOW
 
-                        result = subprocess.run(
-                            convert_cmd, **convert_subprocess_kwargs
-                        )
+                        result = subprocess.run(convert_cmd, **convert_subprocess_kwargs)
 
                         if result.returncode == 0:  # type: ignore
                             conversion_successful = True
-                            logging.info(
-                                f"Successfully converted {doc_path.name} to PDF"
-                            )
+                            logging.info(f"Successfully converted {doc_path.name} to PDF")
                             break
-                        else:
-                            logging.warning(
-                                f"LibreOffice command '{cmd}' failed: {result.stderr}"  # type: ignore
-                            )
+                        logging.warning(
+                            f"LibreOffice command '{cmd}' failed: {result.stderr}"  # type: ignore
+                        )
                     except subprocess.TimeoutExpired:
                         logging.warning(f"LibreOffice command '{cmd}' timed out")
                     except Exception as e:
-                        logging.error(
-                            f"LibreOffice command '{cmd}' failed with exception: {e}"
-                        )
+                        logging.error(f"LibreOffice command '{cmd}' failed with exception: {e}")
 
                 if not conversion_successful:
                     raise RuntimeError(
@@ -213,9 +198,7 @@ class PDFConverter:
                     )
 
                 pdf_path = pdf_files[0]
-                logging.info(
-                    f"Generated PDF: {pdf_path.name} ({pdf_path.stat().st_size} bytes)"
-                )
+                logging.info(f"Generated PDF: {pdf_path.name} ({pdf_path.stat().st_size} bytes)")
 
                 # Validate the generated PDF
                 if pdf_path.stat().st_size < 100:  # Very small file, likely empty
@@ -235,9 +218,7 @@ class PDFConverter:
             raise
 
     @staticmethod
-    def convert_text_to_pdf(
-        text_path: Union[str, Path], output_dir: Optional[str] = None
-    ) -> Path:
+    def convert_text_to_pdf(text_path: str | Path, output_dir: str | None = None) -> Path:
         """
         Convert text file (.txt, .md) to PDF using ReportLab with full markdown support.
 
@@ -260,22 +241,20 @@ class PDFConverter:
 
             # Read the text content
             try:
-                with open(text_path, "r", encoding="utf-8") as f:
+                with open(text_path, encoding="utf-8") as f:
                     text_content = f.read()
             except UnicodeDecodeError:
                 # Try with different encodings
                 for encoding in ["gbk", "latin-1", "cp1252"]:
                     try:
-                        with open(text_path, "r", encoding=encoding) as f:
+                        with open(text_path, encoding=encoding) as f:
                             text_content = f.read()
                         logging.info(f"Successfully read file with {encoding} encoding")
                         break
                     except UnicodeDecodeError:
                         continue
                 else:
-                    raise RuntimeError(
-                        f"Could not decode text file {text_path.name} with any supported encoding"
-                    )
+                    raise RuntimeError(f"Could not decode text file {text_path.name} with any supported encoding")
 
             # Prepare output directory
             if output_dir:
@@ -291,10 +270,10 @@ class PDFConverter:
 
             try:
                 from reportlab.lib.pagesizes import A4
-                from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-                from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+                from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
                 from reportlab.lib.units import inch
                 from reportlab.pdfbase import pdfmetrics
+                from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
                 # Create PDF document
                 doc = SimpleDocTemplate(
@@ -378,9 +357,7 @@ class PDFConverter:
                             story.append(Spacer(1, 6))
                 else:
                     # Handle plain text files (.txt)
-                    logging.info(
-                        f"Processing plain text file with {len(text_content)} characters..."
-                    )
+                    logging.info(f"Processing plain text file with {len(text_content)} characters...")
 
                     # Split text into lines and process each line
                     lines = text_content.split("\n")
@@ -397,11 +374,7 @@ class PDFConverter:
 
                         # Regular text lines
                         # Escape special characters for ReportLab
-                        safe_line = (
-                            line.replace("&", "&amp;")
-                            .replace("<", "&lt;")
-                            .replace(">", "&gt;")
-                        )
+                        safe_line = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
                         # Create paragraph
                         story.append(Paragraph(safe_line, normal_style))
@@ -425,15 +398,11 @@ class PDFConverter:
                     "Please install it using: pip install reportlab"
                 )
             except Exception as e:
-                raise RuntimeError(
-                    f"Failed to convert text file {text_path.name} to PDF: {str(e)}"
-                )
+                raise RuntimeError(f"Failed to convert text file {text_path.name} to PDF: {str(e)}")
 
             # Validate the generated PDF
             if not pdf_path.exists() or pdf_path.stat().st_size < 100:
-                raise RuntimeError(
-                    f"PDF conversion failed for {text_path.name} - generated PDF is empty or corrupted."
-                )
+                raise RuntimeError(f"PDF conversion failed for {text_path.name} - generated PDF is empty or corrupted.")
 
             return pdf_path
 
@@ -487,8 +456,8 @@ class PDFConverter:
 
     def convert_to_pdf(
         self,
-        file_path: Union[str, Path],
-        output_dir: Optional[str] = None,
+        file_path: str | Path,
+        output_dir: str | None = None,
     ) -> Path:
         """
         Convert document to PDF based on file extension
@@ -533,7 +502,7 @@ class PDFConverter:
 
         # Check LibreOffice
         try:
-            subprocess_kwargs: Dict[str, Any] = {
+            subprocess_kwargs: dict[str, Any] = {
                 "capture_output": True,
                 "text": True,
                 "check": True,
@@ -542,9 +511,7 @@ class PDFConverter:
             }
 
             if platform.system() == "Windows":
-                subprocess_kwargs["creationflags"] = (
-                    0x08000000  # subprocess.CREATE_NO_WINDOW
-                )
+                subprocess_kwargs["creationflags"] = 0x08000000  # subprocess.CREATE_NO_WINDOW
 
             subprocess.run(["libreoffice", "--version"], **subprocess_kwargs)
             results["libreoffice"] = True
@@ -576,9 +543,7 @@ def main():
         action="store_true",
         help="Check dependencies installation",
     )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose logging"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 
@@ -598,9 +563,7 @@ def main():
         print("🔍 Checking dependencies...")
         deps = converter.check_dependencies()
 
-        print(
-            f"LibreOffice: {'✅ Available' if deps['libreoffice'] else '❌ Not found'}"
-        )
+        print(f"LibreOffice: {'✅ Available' if deps['libreoffice'] else '❌ Not found'}")
         print(f"ReportLab: {'✅ Available' if deps['reportlab'] else '❌ Not found'}")
 
         if not deps["libreoffice"]:
