@@ -4,11 +4,12 @@ Streamlit UI Components Module
 Contains all reusable UI components
 """
 
-import streamlit as st
-import sys
-from typing import Dict, Any, Optional
-from datetime import datetime
 import json
+import sys
+from datetime import datetime
+from typing import Any
+
+import streamlit as st
 
 
 def display_header():
@@ -522,7 +523,7 @@ def error_troubleshooting_component():
             st.rerun()
 
 
-def sidebar_control_panel() -> Dict[str, Any]:
+def sidebar_control_panel() -> dict[str, Any]:
     """
     Sidebar control panel
 
@@ -579,7 +580,7 @@ def sidebar_control_panel() -> Dict[str, Any]:
         }
 
 
-def display_processing_history() -> Dict[str, Any]:
+def display_processing_history() -> dict[str, Any]:
     """
     Display processing history
 
@@ -596,9 +597,7 @@ def display_processing_history() -> Dict[str, Any]:
         recent_results = st.session_state.results[-10:]
         for i, result in enumerate(reversed(recent_results)):
             status_icon = "✅" if result.get("status") == "success" else "❌"
-            with st.expander(
-                f"{status_icon} Task - {result.get('timestamp', 'Unknown')}"
-            ):
+            with st.expander(f"{status_icon} Task - {result.get('timestamp', 'Unknown')}"):
                 st.write(f"**Status:** {result.get('status', 'Unknown')}")
                 if result.get("input_type"):
                     st.write(f"**Type:** {result['input_type']}")
@@ -620,7 +619,7 @@ def display_processing_history() -> Dict[str, Any]:
     return {"has_history": has_history, "count": history_count}
 
 
-def file_input_component(task_counter: int) -> Optional[str]:
+def file_input_component(task_counter: int) -> str | None:
     """
     File input component with automatic PDF conversion
 
@@ -656,9 +655,9 @@ def file_input_component(task_counter: int) -> Optional[str]:
 
         # Save uploaded file to temporary directory
         try:
-            import tempfile
-            import sys
             import os
+            import sys
+            import tempfile
             from pathlib import Path
 
             # Add project root to path for imports
@@ -672,9 +671,7 @@ def file_input_component(task_counter: int) -> Optional[str]:
 
             # Save original file
             file_ext = uploaded_file.name.split(".")[-1].lower()
-            with tempfile.NamedTemporaryFile(
-                delete=False, suffix=f".{file_ext}"
-            ) as tmp_file:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_ext}") as tmp_file:
                 tmp_file.write(uploaded_file.getvalue())
                 original_file_path = tmp_file.name
 
@@ -694,10 +691,7 @@ def file_input_component(task_counter: int) -> Optional[str]:
                     deps = converter.check_dependencies()
                     missing_deps = []
 
-                    if (
-                        file_ext in {"doc", "docx", "ppt", "pptx", "xls", "xlsx"}
-                        and not deps["libreoffice"]
-                    ):
+                    if file_ext in {"doc", "docx", "ppt", "pptx", "xls", "xlsx"} and not deps["libreoffice"]:
                         missing_deps.append("LibreOffice")
 
                     if file_ext in {"txt", "md"} and not deps["reportlab"]:
@@ -735,9 +729,7 @@ def file_input_component(task_counter: int) -> Optional[str]:
                     # Display conversion result
                     pdf_size = Path(pdf_path).stat().st_size
                     st.success("✅ Successfully converted to PDF!")
-                    st.info(
-                        f"📑 **PDF File:** {Path(pdf_path).name} ({format_file_size(pdf_size)})"
-                    )
+                    st.info(f"📑 **PDF File:** {Path(pdf_path).name} ({format_file_size(pdf_size)})")
 
                     return str(pdf_path)
 
@@ -762,7 +754,7 @@ def file_input_component(task_counter: int) -> Optional[str]:
     return None
 
 
-def url_input_component(task_counter: int) -> Optional[str]:
+def url_input_component(task_counter: int) -> str | None:
     """
     URL input component
 
@@ -791,7 +783,7 @@ def url_input_component(task_counter: int) -> Optional[str]:
     return None
 
 
-def chat_input_component(task_counter: int) -> Optional[str]:
+def chat_input_component(task_counter: int) -> str | None:
     """
     Chat input component for coding requirements
 
@@ -860,9 +852,7 @@ The system should be scalable and production-ready, with proper error handling a
         word_count = len(user_input.split())
         char_count = len(user_input)
 
-        st.success(
-            f"✅ **Requirements captured!** ({word_count} words, {char_count} characters)"
-        )
+        st.success(f"✅ **Requirements captured!** ({word_count} words, {char_count} characters)")
 
         # Show a preview of what will be analyzed
         with st.expander("📋 Preview your requirements", expanded=False):
@@ -877,15 +867,13 @@ The system should be scalable and production-ready, with proper error handling a
         return user_input.strip()
 
     elif user_input and len(user_input.strip()) <= 20:
-        st.warning(
-            "⚠️ Please provide more detailed requirements (at least 20 characters)"
-        )
+        st.warning("⚠️ Please provide more detailed requirements (at least 20 characters)")
         return None
 
     return None
 
 
-def input_method_selector(task_counter: int) -> tuple[Optional[str], Optional[str]]:
+def input_method_selector(task_counter: int) -> tuple[str | None, str | None]:
     """
     Input method selector
 
@@ -938,7 +926,7 @@ def input_method_selector(task_counter: int) -> tuple[Optional[str], Optional[st
     return input_source, input_type
 
 
-def results_display_component(result: Dict[str, Any], task_counter: int):
+def results_display_component(result: dict[str, Any], task_counter: int):
     """
     Results display component
 
@@ -967,9 +955,7 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
     with tab1:
         st.markdown("#### 📊 Paper Analysis Results")
         with st.expander("Analysis Output Details", expanded=True):
-            analysis_result = result.get(
-                "analysis_result", "No analysis result available"
-            )
+            analysis_result = result.get("analysis_result", "No analysis result available")
             try:
                 # Try to parse JSON result for formatted display
                 if analysis_result.strip().startswith("{"):
@@ -993,9 +979,7 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
     with tab2:
         st.markdown("#### 📥 Download & Preparation Results")
         with st.expander("Download Process Details", expanded=True):
-            download_result = result.get(
-                "download_result", "No download result available"
-            )
+            download_result = result.get("download_result", "No download result available")
             st.text_area(
                 "Download Output",
                 download_result,
@@ -1005,9 +989,7 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
 
             # Try to extract file path information
             if "paper_dir" in download_result or "path" in download_result.lower():
-                st.info(
-                    "💡 **Tip:** Look for file paths in the output above to locate generated files"
-                )
+                st.info("💡 **Tip:** Look for file paths in the output above to locate generated files")
 
     with tab3:
         st.markdown("#### 🔧 Code Implementation Results")
@@ -1055,9 +1037,7 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
         st.markdown("#### 📁 Generated Files & Reports")
 
         # Try to extract file paths from results
-        all_results = (
-            f"{result.get('download_result', '')} {result.get('repo_result', '')}"
-        )
+        all_results = f"{result.get('download_result', '')} {result.get('repo_result', '')}"
 
         # Look for possible file path patterns
         import re
@@ -1222,9 +1202,7 @@ def progress_display_component():
     return progress_bar, status_text
 
 
-def enhanced_progress_display_component(
-    enable_indexing: bool = True, chat_mode: bool = False
-):
+def enhanced_progress_display_component(enable_indexing: bool = True, chat_mode: bool = False):
     """
     Enhanced progress display component
 
@@ -1241,9 +1219,7 @@ def enhanced_progress_display_component(
     elif enable_indexing:
         st.markdown("### 🚀 AI Research Engine - Full Processing Workflow")
     else:
-        st.markdown(
-            "### ⚡ AI Research Engine - Fast Processing Workflow (Indexing Disabled)"
-        )
+        st.markdown("### ⚡ AI Research Engine - Fast Processing Workflow (Indexing Disabled)")
 
     # Create progress container
     progress_container = st.container()
@@ -1356,9 +1332,7 @@ def enhanced_progress_display_component(
     return progress_bar, status_text, step_indicators, workflow_steps
 
 
-def update_step_indicator(
-    step_indicators, workflow_steps, current_step: int, status: str = "active"
-):
+def update_step_indicator(step_indicators, workflow_steps, current_step: int, status: str = "active"):
     """
     Update step indicator
 

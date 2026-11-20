@@ -6,15 +6,16 @@ and reduce code duplication across the project.
 """
 
 import os
+from typing import Any
+
 import yaml
-from typing import Any, Type, Dict, Tuple
 
 # Import LLM classes
 from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
 from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
 
 
-def get_preferred_llm_class(config_path: str = "mcp_agent.secrets.yaml") -> Type[Any]:
+def get_preferred_llm_class(config_path: str = "mcp_agent.secrets.yaml") -> type[Any]:
     """
     Automatically select the LLM class based on API key availability in configuration.
 
@@ -30,14 +31,14 @@ def get_preferred_llm_class(config_path: str = "mcp_agent.secrets.yaml") -> Type
     try:
         # Try to read the configuration file
         if os.path.exists(config_path):
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
             # Check for anthropic API key in config
             anthropic_config = config.get("anthropic", {})
             anthropic_key = anthropic_config.get("api_key", "")
 
-            if anthropic_key and anthropic_key.strip() and not anthropic_key == "":
+            if anthropic_key and anthropic_key.strip() and anthropic_key != "":
                 # print("🤖 Using AnthropicAugmentedLLM (Anthropic API key found in config)")
                 return AnthropicAugmentedLLM
             else:
@@ -65,16 +66,14 @@ def get_default_models(config_path: str = "mcp_agent.config.yaml"):
     """
     try:
         if os.path.exists(config_path):
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
             # Handle null values in config sections
             anthropic_config = config.get("anthropic") or {}
             openai_config = config.get("openai") or {}
 
-            anthropic_model = anthropic_config.get(
-                "default_model", "claude-sonnet-4-20250514"
-            )
+            anthropic_model = anthropic_config.get("default_model", "claude-sonnet-4-20250514")
             openai_model = openai_config.get("default_model", "o3-mini")
 
             return {"anthropic": anthropic_model, "openai": openai_model}
@@ -89,7 +88,7 @@ def get_default_models(config_path: str = "mcp_agent.config.yaml"):
 
 def get_document_segmentation_config(
     config_path: str = "mcp_agent.config.yaml",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get document segmentation configuration from config file.
 
@@ -101,7 +100,7 @@ def get_document_segmentation_config(
     """
     try:
         if os.path.exists(config_path):
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
             # Get document segmentation config with defaults
@@ -111,9 +110,7 @@ def get_document_segmentation_config(
                 "size_threshold_chars": seg_config.get("size_threshold_chars", 50000),
             }
         else:
-            print(
-                f"📄 Config file {config_path} not found, using default segmentation settings"
-            )
+            print(f"📄 Config file {config_path} not found, using default segmentation settings")
             return {"enabled": True, "size_threshold_chars": 50000}
 
     except Exception as e:
@@ -124,7 +121,7 @@ def get_document_segmentation_config(
 
 def should_use_document_segmentation(
     document_content: str, config_path: str = "mcp_agent.config.yaml"
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """
     Determine whether to use document segmentation based on configuration and document size.
 
@@ -157,9 +154,7 @@ def should_use_document_segmentation(
         )
 
 
-def get_adaptive_agent_config(
-    use_segmentation: bool, search_server_names: list = None
-) -> Dict[str, list]:
+def get_adaptive_agent_config(use_segmentation: bool, search_server_names: list = None) -> dict[str, list]:
     """
     Get adaptive agent configuration based on whether to use document segmentation.
 
@@ -191,7 +186,7 @@ def get_adaptive_agent_config(
     return config
 
 
-def get_adaptive_prompts(use_segmentation: bool) -> Dict[str, str]:
+def get_adaptive_prompts(use_segmentation: bool) -> dict[str, str]:
     """
     Get appropriate prompt versions based on segmentation usage.
 
@@ -203,12 +198,12 @@ def get_adaptive_prompts(use_segmentation: bool) -> Dict[str, str]:
     """
     # Import here to avoid circular imports
     from prompts.code_prompts import (
-        PAPER_CONCEPT_ANALYSIS_PROMPT,
-        PAPER_ALGORITHM_ANALYSIS_PROMPT,
         CODE_PLANNING_PROMPT,
-        PAPER_CONCEPT_ANALYSIS_PROMPT_TRADITIONAL,
-        PAPER_ALGORITHM_ANALYSIS_PROMPT_TRADITIONAL,
         CODE_PLANNING_PROMPT_TRADITIONAL,
+        PAPER_ALGORITHM_ANALYSIS_PROMPT,
+        PAPER_ALGORITHM_ANALYSIS_PROMPT_TRADITIONAL,
+        PAPER_CONCEPT_ANALYSIS_PROMPT,
+        PAPER_CONCEPT_ANALYSIS_PROMPT_TRADITIONAL,
     )
 
     if use_segmentation:

@@ -6,9 +6,9 @@ memory optimization for long-running development sessions.
 """
 
 import json
-import time
 import logging
-from typing import Dict, Any, List, Optional
+import time
+from typing import Any
 
 # Import tiktoken for token calculation
 try:
@@ -19,12 +19,10 @@ except ImportError:
     TIKTOKEN_AVAILABLE = False
 
 # Import prompts from code_prompts
-import sys
 import os
+import sys
 
-sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from prompts.code_prompts import (
     GENERAL_CODE_IMPLEMENTATION_SYSTEM_PROMPT,
 )
@@ -45,7 +43,7 @@ class CodeImplementationAgent:
     def __init__(
         self,
         mcp_agent,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
         enable_read_tools: bool = True,
     ):
         """
@@ -68,27 +66,17 @@ class CodeImplementationAgent:
             "dependency_analysis": [],  # Track dependency analysis and file reads
         }
         self.files_implemented_count = 0
-        self.implemented_files_set = (
-            set()
-        )  # Track unique file paths to avoid duplicate counting
-        self.files_read_for_dependencies = (
-            set()
-        )  # Track files read for dependency analysis
-        self.last_summary_file_count = (
-            0  # Track the file count when last summary was triggered
-        )
+        self.implemented_files_set = set()  # Track unique file paths to avoid duplicate counting
+        self.files_read_for_dependencies = set()  # Track files read for dependency analysis
+        self.last_summary_file_count = 0  # Track the file count when last summary was triggered
 
         # Token calculation settings
-        self.max_context_tokens = (
-            200000  # Default max context tokens for Claude-3.5-Sonnet
-        )
+        self.max_context_tokens = 200000  # Default max context tokens for Claude-3.5-Sonnet
         self.token_buffer = 10000  # Safety buffer before reaching max
         self.summary_trigger_tokens = (
             self.max_context_tokens - self.token_buffer
         )  # Trigger summary when approaching limit
-        self.last_summary_token_count = (
-            0  # Track token count when last summary was triggered
-        )
+        self.last_summary_token_count = 0  # Track token count when last summary was triggered
 
         # Initialize tokenizer
         if TIKTOKEN_AVAILABLE:
@@ -101,9 +89,7 @@ class CodeImplementationAgent:
                 self.logger.warning(f"Failed to initialize tokenizer: {e}")
         else:
             self.tokenizer = None
-            self.logger.warning(
-                "tiktoken not available, token-based summary triggering disabled"
-            )
+            self.logger.warning("tiktoken not available, token-based summary triggering disabled")
 
         # Analysis loop detection
         self.recent_tool_calls = []  # Track recent tool calls to detect analysis loops
@@ -116,13 +102,9 @@ class CodeImplementationAgent:
 
         # Log read tools configuration
         read_tools_status = "ENABLED" if self.enable_read_tools else "DISABLED"
-        self.logger.info(
-            f"🔧 Code Implementation Agent initialized - Read tools: {read_tools_status}"
-        )
+        self.logger.info(f"🔧 Code Implementation Agent initialized - Read tools: {read_tools_status}")
         if not self.enable_read_tools:
-            self.logger.info(
-                "🚫 Testing mode: read_file and read_code_mem will be skipped when called"
-            )
+            self.logger.info("🚫 Testing mode: read_file and read_code_mem will be skipped when called")
 
     def _create_default_logger(self) -> logging.Logger:
         """Create default logger if none provided"""
@@ -151,7 +133,7 @@ class CodeImplementationAgent:
         self.llm_client_type = llm_client_type
         self.logger.info("Memory agent integration configured")
 
-    async def execute_tool_calls(self, tool_calls: List[Dict]) -> List[Dict]:
+    async def execute_tool_calls(self, tool_calls: list[dict]) -> list[dict]:
         """
         Execute MCP tool calls and track implementation progress
 
@@ -202,27 +184,17 @@ class CodeImplementationAgent:
                 if tool_name == "read_file":
                     file_path = tool_call["input"].get("file_path", "unknown")
                     self.logger.info(f"🔍 READ_FILE CALL DETECTED: {file_path}")
-                    self.logger.info(
-                        f"📊 Files implemented count: {self.files_implemented_count}"
-                    )
-                    self.logger.info(
-                        f"🧠 Memory agent available: {self.memory_agent is not None}"
-                    )
+                    self.logger.info(f"📊 Files implemented count: {self.files_implemented_count}")
+                    self.logger.info(f"🧠 Memory agent available: {self.memory_agent is not None}")
 
                     # Enable optimization if memory agent is available (more aggressive approach)
                     if self.memory_agent is not None:
-                        self.logger.info(
-                            f"🔄 INTERCEPTING read_file call for {file_path} (memory agent available)"
-                        )
-                        result = await self._handle_read_file_with_memory_optimization(
-                            tool_call
-                        )
+                        self.logger.info(f"🔄 INTERCEPTING read_file call for {file_path} (memory agent available)")
+                        result = await self._handle_read_file_with_memory_optimization(tool_call)
                         results.append(result)
                         continue
                     else:
-                        self.logger.info(
-                            "📁 NO INTERCEPTION: no memory agent available"
-                        )
+                        self.logger.info("📁 NO INTERCEPTION: no memory agent available")
 
                 if self.mcp_agent:
                     # Execute tool call through MCP protocol
@@ -230,9 +202,7 @@ class CodeImplementationAgent:
 
                     # Track file implementation progress
                     if tool_name == "write_file":
-                        await self._track_file_implementation_with_summary(
-                            tool_call, result
-                        )
+                        await self._track_file_implementation_with_summary(tool_call, result)
                     elif tool_name == "read_file":
                         self._track_dependency_analysis(tool_call, result)
 
@@ -267,9 +237,7 @@ class CodeImplementationAgent:
                     {
                         "tool_id": tool_call["id"],
                         "tool_name": tool_name,
-                        "result": json.dumps(
-                            {"status": "error", "message": str(e)}, ensure_ascii=False
-                        ),
+                        "result": json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False),
                     }
                 )
 
@@ -277,7 +245,7 @@ class CodeImplementationAgent:
 
     # _handle_read_code_mem method removed - read_code_mem is now a proper MCP tool
 
-    async def _handle_read_file_with_memory_optimization(self, tool_call: Dict) -> Dict:
+    async def _handle_read_file_with_memory_optimization(self, tool_call: dict) -> dict:
         """
         Intercept read_file calls and redirect to read_code_mem if a summary exists.
         This prevents unnecessary file reads if the summary is already available.
@@ -298,9 +266,7 @@ class CodeImplementationAgent:
         if self.memory_agent and self.mcp_agent:
             try:
                 # Use read_code_mem MCP tool to check if summary exists (pass file path as list)
-                read_code_mem_result = await self.mcp_agent.call_tool(
-                    "read_code_mem", {"file_paths": [file_path]}
-                )
+                read_code_mem_result = await self.mcp_agent.call_tool("read_code_mem", {"file_paths": [file_path]})
 
                 # Parse the result to check if summary was found
                 import json
@@ -310,8 +276,7 @@ class CodeImplementationAgent:
                         result_data = json.loads(read_code_mem_result)
                         # Check if any summaries were found in the results
                         should_use_summary = (
-                            result_data.get("status")
-                            in ["all_summaries_found", "partial_summaries_found"]
+                            result_data.get("status") in ["all_summaries_found", "partial_summaries_found"]
                             and result_data.get("summaries_found", 0) > 0
                         )
                     except json.JSONDecodeError:
@@ -325,40 +290,28 @@ class CodeImplementationAgent:
 
             # Use the MCP agent to call read_code_mem tool
             if self.mcp_agent:
-                result = await self.mcp_agent.call_tool(
-                    "read_code_mem", {"file_paths": [file_path]}
-                )
+                result = await self.mcp_agent.call_tool("read_code_mem", {"file_paths": [file_path]})
 
                 # Modify the result to indicate it was originally a read_file call
                 import json
 
                 try:
-                    result_data = (
-                        json.loads(result) if isinstance(result, str) else result
-                    )
+                    result_data = json.loads(result) if isinstance(result, str) else result
                     if isinstance(result_data, dict):
                         # Extract the specific file result for the single file we requested
                         file_results = result_data.get("results", [])
                         if file_results and len(file_results) > 0:
-                            specific_result = file_results[
-                                0
-                            ]  # Get the first (and only) result
+                            specific_result = file_results[0]  # Get the first (and only) result
                             # Transform to match the old single-file format for backward compatibility
                             transformed_result = {
                                 "status": specific_result.get("status", "no_summary"),
-                                "file_path": specific_result.get(
-                                    "file_path", file_path
-                                ),
-                                "summary_content": specific_result.get(
-                                    "summary_content"
-                                ),
+                                "file_path": specific_result.get("file_path", file_path),
+                                "summary_content": specific_result.get("summary_content"),
                                 "message": specific_result.get("message", ""),
                                 "original_tool": "read_file",
                                 "optimization": "redirected_to_read_code_mem",
                             }
-                            final_result = json.dumps(
-                                transformed_result, ensure_ascii=False
-                            )
+                            final_result = json.dumps(transformed_result, ensure_ascii=False)
                         else:
                             # Fallback if no results
                             result_data["original_tool"] = "read_file"
@@ -375,13 +328,9 @@ class CodeImplementationAgent:
                     "result": final_result,
                 }
             else:
-                self.logger.warning(
-                    "MCP agent not available for read_code_mem optimization"
-                )
+                self.logger.warning("MCP agent not available for read_code_mem optimization")
         else:
-            self.logger.info(
-                f"📁 READ_FILE: No summary for {file_path}, using actual file"
-            )
+            self.logger.info(f"📁 READ_FILE: No summary for {file_path}, using actual file")
 
             # Execute the original read_file call
             if self.mcp_agent:
@@ -408,9 +357,7 @@ class CodeImplementationAgent:
                     ),
                 }
 
-    async def _track_file_implementation_with_summary(
-        self, tool_call: Dict, result: Any
-    ):
+    async def _track_file_implementation_with_summary(self, tool_call: dict, result: Any):
         """
         Track file implementation and create code summary
 
@@ -441,14 +388,12 @@ class CodeImplementationAgent:
                         f"Created code summary for implemented file: {file_path}, summary: {summary[:100]}..."
                     )
                 else:
-                    self.logger.warning(
-                        "Missing file path or content for summary generation"
-                    )
+                    self.logger.warning("Missing file path or content for summary generation")
 
             except Exception as e:
                 self.logger.error(f"Failed to create code summary: {e}")
 
-    def _track_file_implementation(self, tool_call: Dict, result: Any):
+    def _track_file_implementation(self, tool_call: dict, result: Any):
         """
         Track file implementation progress
         """
@@ -495,9 +440,7 @@ class CodeImplementationAgent:
             # Extract file path for tracking
             file_path = None
             if result_data and result_data.get("status") == "success":
-                file_path = result_data.get(
-                    "file_path", tool_call["input"].get("file_path", "unknown")
-                )
+                file_path = result_data.get("file_path", tool_call["input"].get("file_path", "unknown"))
             else:
                 file_path = tool_call["input"].get("file_path")
 
@@ -526,9 +469,7 @@ class CodeImplementationAgent:
                 # print(f"🔧 OPTIMIZATION NOW ENABLED: files_implemented_count > 0 = {self.files_implemented_count > 0}")
             elif file_path and file_path in self.implemented_files_set:
                 # This file was already implemented (duplicate tool call)
-                self.logger.debug(
-                    f"File already tracked, skipping duplicate count: {file_path}"
-                )
+                self.logger.debug(f"File already tracked, skipping duplicate count: {file_path}")
             else:
                 # No valid file path found
                 self.logger.warning("No valid file path found for tracking")
@@ -545,7 +486,7 @@ class CodeImplementationAgent:
                     f"File implementation counted (emergency fallback): count={self.files_implemented_count}, file={file_path}"
                 )
 
-    def _track_dependency_analysis(self, tool_call: Dict, result: Any):
+    def _track_dependency_analysis(self, tool_call: dict, result: Any):
         """
         Track dependency analysis through read_file calls
         """
@@ -565,14 +506,12 @@ class CodeImplementationAgent:
                         }
                     )
 
-                    self.logger.info(
-                        f"Dependency analysis tracked: file_read={file_path}"
-                    )
+                    self.logger.info(f"Dependency analysis tracked: file_read={file_path}")
 
         except Exception as e:
             self.logger.warning(f"Failed to track dependency analysis: {e}")
 
-    def calculate_messages_token_count(self, messages: List[Dict]) -> int:
+    def calculate_messages_token_count(self, messages: list[dict]) -> int:
         """
         Calculate total token count for a list of messages
 
@@ -596,9 +535,7 @@ class CodeImplementationAgent:
 
                 # Count tokens for content
                 if content:
-                    content_tokens = len(
-                        self.tokenizer.encode(content, disallowed_special=())
-                    )
+                    content_tokens = len(self.tokenizer.encode(content, disallowed_special=()))
                     total_tokens += content_tokens
 
                 # Add tokens for role and message structure
@@ -613,7 +550,7 @@ class CodeImplementationAgent:
             total_chars = sum(len(str(msg.get("content", ""))) for msg in messages)
             return total_chars // 4
 
-    def should_trigger_summary_by_tokens(self, messages: List[Dict]) -> bool:
+    def should_trigger_summary_by_tokens(self, messages: list[dict]) -> bool:
         """
         Check if summary should be triggered based on token count
 
@@ -633,8 +570,7 @@ class CodeImplementationAgent:
         should_trigger = (
             current_token_count > self.summary_trigger_tokens
             and current_token_count
-            > self.last_summary_token_count
-            + 10000  # Minimum 10k tokens between summaries / 总结间最少10k tokens
+            > self.last_summary_token_count + 10000  # Minimum 10k tokens between summaries / 总结间最少10k tokens
         )
 
         if should_trigger:
@@ -646,9 +582,7 @@ class CodeImplementationAgent:
 
         return should_trigger
 
-    def should_trigger_summary(
-        self, summary_trigger: int = 5, messages: List[Dict] = None
-    ) -> bool:
+    def should_trigger_summary(self, summary_trigger: int = 5, messages: list[dict] = None) -> bool:
         """
         Check if summary should be triggered based on token count (preferred) or file count (fallback)
         根据token数（首选）或文件数（回退）检查是否应触发总结
@@ -674,7 +608,7 @@ class CodeImplementationAgent:
 
         return should_trigger
 
-    def mark_summary_triggered(self, messages: List[Dict] = None):
+    def mark_summary_triggered(self, messages: list[dict] = None):
         """
         Mark that summary has been triggered for current state
         标记当前状态的总结已被触发
@@ -687,19 +621,15 @@ class CodeImplementationAgent:
 
         # Update token-based tracking / 更新基于token的跟踪
         if messages and self.tokenizer:
-            self.last_summary_token_count = self.calculate_messages_token_count(
-                messages
-            )
+            self.last_summary_token_count = self.calculate_messages_token_count(messages)
             self.logger.info(
                 f"Summary marked as triggered - file_count: {self.files_implemented_count}, "
                 f"token_count: {self.last_summary_token_count:,}"
             )
         else:
-            self.logger.info(
-                f"Summary marked as triggered for file count: {self.files_implemented_count}"
-            )
+            self.logger.info(f"Summary marked as triggered for file count: {self.files_implemented_count}")
 
-    def get_implementation_summary(self) -> Dict[str, Any]:
+    def get_implementation_summary(self) -> dict[str, Any]:
         """
         Get current implementation summary
         获取当前实现总结
@@ -713,7 +643,7 @@ class CodeImplementationAgent:
         """
         return self.files_implemented_count
 
-    def get_read_tools_status(self) -> Dict[str, Any]:
+    def get_read_tools_status(self) -> dict[str, Any]:
         """
         Get read tools configuration status
         获取读取工具配置状态
@@ -770,7 +700,7 @@ class CodeImplementationAgent:
         )
         self.logger.info(f"Architecture note recorded: {note}")
 
-    def get_implementation_statistics(self) -> Dict[str, Any]:
+    def get_implementation_statistics(self) -> dict[str, Any]:
         """
         Get comprehensive implementation statistics
         获取全面的实现统计信息
@@ -778,23 +708,13 @@ class CodeImplementationAgent:
         return {
             "total_files_implemented": self.files_implemented_count,
             "files_implemented_count": self.files_implemented_count,
-            "technical_decisions_count": len(
-                self.implementation_summary["technical_decisions"]
-            ),
-            "constraints_count": len(
-                self.implementation_summary["important_constraints"]
-            ),
-            "architecture_notes_count": len(
-                self.implementation_summary["architecture_notes"]
-            ),
-            "dependency_analysis_count": len(
-                self.implementation_summary["dependency_analysis"]
-            ),
+            "technical_decisions_count": len(self.implementation_summary["technical_decisions"]),
+            "constraints_count": len(self.implementation_summary["important_constraints"]),
+            "architecture_notes_count": len(self.implementation_summary["architecture_notes"]),
+            "dependency_analysis_count": len(self.implementation_summary["dependency_analysis"]),
             "files_read_for_dependencies": len(self.files_read_for_dependencies),
             "unique_files_implemented": len(self.implemented_files_set),
-            "completed_files_list": [
-                f["file"] for f in self.implementation_summary["completed_files"]
-            ],
+            "completed_files_list": [f["file"] for f in self.implementation_summary["completed_files"]],
             "dependency_files_read": list(self.files_read_for_dependencies),
             "last_summary_file_count": self.last_summary_file_count,
             "read_tools_status": self.get_read_tools_status(),  # Include read tools configuration
@@ -809,9 +729,7 @@ class CodeImplementationAgent:
         self.logger.info(
             f"🔧 OPTIMIZATION FORCE ENABLED: files_implemented_count set to {self.files_implemented_count}"
         )
-        print(
-            f"🔧 OPTIMIZATION FORCE ENABLED: files_implemented_count set to {self.files_implemented_count}"
-        )
+        print(f"🔧 OPTIMIZATION FORCE ENABLED: files_implemented_count set to {self.files_implemented_count}")
 
     def reset_implementation_tracking(self):
         """
@@ -826,14 +744,16 @@ class CodeImplementationAgent:
             "dependency_analysis": [],  # Reset dependency analysis and file reads
         }
         self.files_implemented_count = 0
-        self.implemented_files_set = (
-            set()
-        )  # Reset the unique files set / 重置唯一文件集合
+        self.implemented_files_set = set()  # Reset the unique files set / 重置唯一文件集合
         self.files_read_for_dependencies = (
             set()
         )  # Reset files read for dependency analysis / 重置为依赖分析而读取的文件
-        self.last_summary_file_count = 0  # Reset the file count when last summary was triggered / 重置上次触发总结时的文件数
-        self.last_summary_token_count = 0  # Reset token count when last summary was triggered / 重置上次触发总结时的token数
+        self.last_summary_file_count = (
+            0  # Reset the file count when last summary was triggered / 重置上次触发总结时的文件数
+        )
+        self.last_summary_token_count = (
+            0  # Reset token count when last summary was triggered / 重置上次触发总结时的token数
+        )
         self.logger.info("Implementation tracking reset")
 
         # Reset analysis loop detection / 重置分析循环检测
@@ -875,14 +795,10 @@ class CodeImplementationAgent:
         recent_calls_set = set(self.recent_tool_calls)
 
         # If all recent calls are analysis tools, we're in an analysis loop / 如果最近的调用都是分析工具，我们在分析循环中
-        in_loop = (
-            recent_calls_set.issubset(analysis_tools) and len(recent_calls_set) >= 1
-        )
+        in_loop = recent_calls_set.issubset(analysis_tools) and len(recent_calls_set) >= 1
 
         if in_loop:
-            self.logger.warning(
-                f"Analysis loop detected! Recent calls: {self.recent_tool_calls}"
-            )
+            self.logger.warning(f"Analysis loop detected! Recent calls: {self.recent_tool_calls}")
 
         return in_loop
 
@@ -926,9 +842,7 @@ class CodeImplementationAgent:
             files_to_test = [test_file_path]
         else:
             # Use implemented files from tracking
-            files_to_test = list(self.implemented_files_set)[
-                :3
-            ]  # Limit to first 3 files
+            files_to_test = list(self.implemented_files_set)[:3]  # Limit to first 3 files
 
         if not files_to_test:
             self.logger.warning("No implemented files to test")
@@ -940,33 +854,24 @@ class CodeImplementationAgent:
         for file_path in files_to_test:
             if self.mcp_agent:
                 try:
-                    result = await self.mcp_agent.call_tool(
-                        "read_code_mem", {"file_paths": [file_path]}
-                    )
+                    result = await self.mcp_agent.call_tool("read_code_mem", {"file_paths": [file_path]})
 
                     # Parse the result to check if summary was found
                     import json
 
-                    result_data = (
-                        json.loads(result) if isinstance(result, str) else result
-                    )
+                    result_data = json.loads(result) if isinstance(result, str) else result
 
                     if (
-                        result_data.get("status")
-                        in ["all_summaries_found", "partial_summaries_found"]
+                        result_data.get("status") in ["all_summaries_found", "partial_summaries_found"]
                         and result_data.get("summaries_found", 0) > 0
                     ):
                         summary_files_found += 1
                 except Exception as e:
-                    self.logger.warning(
-                        f"Failed to test read_code_mem for {file_path}: {e}"
-                    )
+                    self.logger.warning(f"Failed to test read_code_mem for {file_path}: {e}")
             else:
                 self.logger.warning("MCP agent not available for testing")
 
-        self.logger.info(
-            f"📋 Summary testing: {summary_files_found}/{len(files_to_test)} files have summaries"
-        )
+        self.logger.info(f"📋 Summary testing: {summary_files_found}/{len(files_to_test)} files have summaries")
 
     async def test_automatic_read_file_optimization(self):
         """
@@ -985,9 +890,7 @@ class CodeImplementationAgent:
 
         print(f"📁 Testing automatic optimization for: {test_file}")
         print(f"📊 Files implemented count: {self.files_implemented_count}")
-        print(
-            f"🔧 Optimization should be: {'ENABLED' if self.files_implemented_count > 0 else 'DISABLED'}"
-        )
+        print(f"🔧 Optimization should be: {'ENABLED' if self.files_implemented_count > 0 else 'DISABLED'}")
 
         # Create a simulated read_file tool call
         simulated_read_file_call = {
@@ -1016,9 +919,7 @@ class CodeImplementationAgent:
                 result_data = json.loads(result.get("result", "{}"))
                 if result_data.get("optimization") == "redirected_to_read_code_mem":
                     print("🎉 SUCCESS: read_file was automatically optimized!")
-                    print(
-                        f"   Original tool: {result_data.get('original_tool', 'N/A')}"
-                    )
+                    print(f"   Original tool: {result_data.get('original_tool', 'N/A')}")
                     print(f"   Status: {result_data.get('status', 'N/A')}")
                 elif result_data.get("status") == "summary_found":
                     print("🎉 SUCCESS: Summary was found and returned!")
@@ -1046,9 +947,7 @@ class CodeImplementationAgent:
 
         try:
             # Use MCP agent to call read_code_mem tool
-            result = await self.mcp_agent.call_tool(
-                "read_code_mem", {"file_paths": [test_file_path]}
-            )
+            result = await self.mcp_agent.call_tool("read_code_mem", {"file_paths": [test_file_path]})
 
             # Parse the result to check if summary was found
             import json
@@ -1056,8 +955,7 @@ class CodeImplementationAgent:
             result_data = json.loads(result) if isinstance(result, str) else result
 
             return (
-                result_data.get("status")
-                in ["all_summaries_found", "partial_summaries_found"]
+                result_data.get("status") in ["all_summaries_found", "partial_summaries_found"]
                 and result_data.get("summaries_found", 0) > 0
             )
         except Exception as e:
@@ -1097,9 +995,7 @@ class CodeImplementationAgent:
             },
         ]
 
-        print(
-            f"\n🔄 Testing tool execution with read_tools_enabled={self.enable_read_tools}"
-        )
+        print(f"\n🔄 Testing tool execution with read_tools_enabled={self.enable_read_tools}")
 
         for tool_call in test_tools:
             tool_name = tool_call["name"]

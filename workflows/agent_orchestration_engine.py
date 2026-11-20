@@ -30,8 +30,10 @@ import asyncio
 import json
 import os
 import re
+from collections.abc import Callable
+from typing import Any
+
 import yaml
-from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # MCP Agent imports
 from mcp_agent.agents.agent import Agent
@@ -40,23 +42,23 @@ from mcp_agent.workflows.parallel.parallel_llm import ParallelLLM
 
 # Local imports
 from prompts.code_prompts import (
-    PAPER_INPUT_ANALYZER_PROMPT,
-    PAPER_DOWNLOADER_PROMPT,
-    PAPER_REFERENCE_ANALYZER_PROMPT,
     CHAT_AGENT_PLANNING_PROMPT,
+    PAPER_DOWNLOADER_PROMPT,
+    PAPER_INPUT_ANALYZER_PROMPT,
+    PAPER_REFERENCE_ANALYZER_PROMPT,
 )
 from utils.file_processor import FileProcessor
+from utils.llm_utils import (
+    get_adaptive_agent_config,
+    get_adaptive_prompts,
+    get_preferred_llm_class,
+    should_use_document_segmentation,
+)
+from workflows.agents.document_segmentation_agent import prepare_document_segments
 from workflows.code_implementation_workflow import CodeImplementationWorkflow
 from workflows.code_implementation_workflow_index import (
     CodeImplementationWorkflowWithIndex,
 )
-from utils.llm_utils import (
-    get_preferred_llm_class,
-    should_use_document_segmentation,
-    get_adaptive_agent_config,
-    get_adaptive_prompts,
-)
-from workflows.agents.document_segmentation_agent import prepare_document_segments
 
 # Environment configuration
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"  # Prevent .pyc file generation
@@ -74,7 +76,7 @@ def get_default_search_server(config_path: str = "mcp_agent.config.yaml"):
     """
     try:
         if os.path.exists(config_path):
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
             default_server = config.get("default_search_server", "brave")
@@ -90,8 +92,8 @@ def get_default_search_server(config_path: str = "mcp_agent.config.yaml"):
 
 
 def get_search_server_names(
-    additional_servers: Optional[List[str]] = None,
-) -> List[str]:
+    additional_servers: list[str] | None = None,
+) -> list[str]:
     """
     Get server names list with the configured default search server.
 
@@ -200,9 +202,7 @@ async def run_research_analyzer(prompt_text: str, logger) -> str:
         print(f"Input preview: {prompt_text[:200] if prompt_text else 'None'}...")
 
         if not prompt_text or prompt_text.strip() == "":
-            raise ValueError(
-                "Empty or None prompt_text provided to run_research_analyzer"
-            )
+            raise ValueError("Empty or None prompt_text provided to run_research_analyzer")
 
         analyzer_agent = Agent(
             name="ResearchAnalyzerAgent",
@@ -239,9 +239,7 @@ async def run_research_analyzer(prompt_text: str, logger) -> str:
             )
 
             try:
-                raw_result = await analyzer.generate_str(
-                    message=prompt_text, request_params=analysis_params
-                )
+                raw_result = await analyzer.generate_str(message=prompt_text, request_params=analysis_params)
 
                 print("✅ LLM request completed")
                 print(f"Raw result type: {type(raw_result)}")
@@ -326,14 +324,10 @@ async def run_resource_processor(analysis_result: str, logger) -> str:
             temperature=0.2,
         )
 
-        return await processor.generate_str(
-            message=analysis_result, request_params=processor_params
-        )
+        return await processor.generate_str(message=analysis_result, request_params=processor_params)
 
 
-async def run_code_analyzer(
-    paper_dir: str, logger, use_segmentation: bool = True
-) -> str:
+async def run_code_analyzer(paper_dir: str, logger, use_segmentation: bool = True) -> str:
     """
     Run the adaptive code analysis workflow using multiple agents for comprehensive code planning.
 
@@ -355,9 +349,7 @@ async def run_code_analyzer(
     agent_config = get_adaptive_agent_config(use_segmentation, search_server_names)
     prompts = get_adaptive_prompts(use_segmentation)
 
-    print(
-        f"📊 Code analysis mode: {'Segmented' if use_segmentation else 'Traditional'}"
-    )
+    print(f"📊 Code analysis mode: {'Segmented' if use_segmentation else 'Traditional'}")
     print(f"   Agent configurations: {agent_config}")
 
     concept_analysis_agent = Agent(
@@ -399,9 +391,7 @@ Please locate and analyze the markdown (.md) file containing the research paper.
 
 The goal is to create a reproduction plan detailed enough for independent implementation."""
 
-    result = await code_aggregator_agent.generate_str(
-        message=message, request_params=enhanced_params
-    )
+    result = await code_aggregator_agent.generate_str(message=message, request_params=enhanced_params)
     print(f"Code analysis result: {result}")
     return result
 
@@ -420,9 +410,7 @@ async def github_repo_download(search_result: str, paper_dir: str, logger) -> st
     """
     github_download_agent = Agent(
         name="GithubDownloadAgent",
-        instruction="Download github repo to the directory {paper_dir}/code_base".format(
-            paper_dir=paper_dir
-        ),
+        instruction=f"Download github repo to the directory {paper_dir}/code_base",
         server_names=["filesystem", "github-downloader"],
     )
 
@@ -436,9 +424,7 @@ async def github_repo_download(search_result: str, paper_dir: str, logger) -> st
             temperature=0.1,
         )
 
-        return await downloader.generate_str(
-            message=search_result, request_params=github_params
-        )
+        return await downloader.generate_str(message=search_result, request_params=github_params)
 
 
 async def paper_reference_analyzer(paper_dir: str, logger) -> str:
@@ -498,8 +484,8 @@ async def _process_input_source(input_source: str, logger) -> str:
 
 
 async def orchestrate_research_analysis_agent(
-    input_source: str, logger, progress_callback: Optional[Callable] = None
-) -> Tuple[str, str]:
+    input_source: str, logger, progress_callback: Callable | None = None
+) -> tuple[str, str]:
     """
     Orchestrate intelligent research analysis and resource processing automation.
 
@@ -516,9 +502,7 @@ async def orchestrate_research_analysis_agent(
     """
     # Step 1: Research Analysis
     if progress_callback:
-        progress_callback(
-            10, "📊 Analyzing research content and extracting key information..."
-        )
+        progress_callback(10, "📊 Analyzing research content and extracting key information...")
     analysis_result = await run_research_analyzer(input_source, logger)
 
     # Add brief pause for system stability
@@ -526,17 +510,15 @@ async def orchestrate_research_analysis_agent(
 
     # Step 2: Download Processing
     if progress_callback:
-        progress_callback(
-            25, "📥 Processing downloads and preparing document structure..."
-        )
+        progress_callback(25, "📥 Processing downloads and preparing document structure...")
     download_result = await run_resource_processor(analysis_result, logger)
 
     return analysis_result, download_result
 
 
 async def synthesize_workspace_infrastructure_agent(
-    download_result: str, logger, workspace_dir: Optional[str] = None
-) -> Dict[str, str]:
+    download_result: str, logger, workspace_dir: str | None = None
+) -> dict[str, str]:
     """
     Synthesize intelligent research workspace infrastructure with automated structure generation.
 
@@ -552,9 +534,7 @@ async def synthesize_workspace_infrastructure_agent(
         dict: Comprehensive workspace infrastructure metadata
     """
     # Parse download result to get file information
-    result = await FileProcessor.process_file_input(
-        download_result, base_dir=workspace_dir
-    )
+    result = await FileProcessor.process_file_input(download_result, base_dir=workspace_dir)
     paper_dir = result["paper_dir"]
 
     # Log workspace infrastructure synthesis
@@ -570,15 +550,13 @@ async def synthesize_workspace_infrastructure_agent(
         "initial_plan_path": os.path.join(paper_dir, "initial_plan.txt"),
         "download_path": os.path.join(paper_dir, "github_download.txt"),
         "index_report_path": os.path.join(paper_dir, "codebase_index_report.txt"),
-        "implementation_report_path": os.path.join(
-            paper_dir, "code_implementation_report.txt"
-        ),
+        "implementation_report_path": os.path.join(paper_dir, "code_implementation_report.txt"),
         "workspace_dir": workspace_dir,
     }
 
 
 async def orchestrate_reference_intelligence_agent(
-    dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None
+    dir_info: dict[str, str], logger, progress_callback: Callable | None = None
 ) -> str:
     """
     Orchestrate intelligent reference analysis with automated research discovery.
@@ -602,7 +580,7 @@ async def orchestrate_reference_intelligence_agent(
     # Check if reference analysis already exists
     if os.path.exists(reference_path):
         print(f"Found existing reference analysis at {reference_path}")
-        with open(reference_path, "r", encoding="utf-8") as f:
+        with open(reference_path, encoding="utf-8") as f:
             return f.read()
 
     # Execute reference analysis
@@ -616,9 +594,7 @@ async def orchestrate_reference_intelligence_agent(
     return reference_result
 
 
-async def orchestrate_document_preprocessing_agent(
-    dir_info: Dict[str, str], logger
-) -> Dict[str, Any]:
+async def orchestrate_document_preprocessing_agent(dir_info: dict[str, str], logger) -> dict[str, Any]:
     """
     Orchestrate adaptive document preprocessing with intelligent segmentation control.
 
@@ -640,9 +616,7 @@ async def orchestrate_document_preprocessing_agent(
         # Step 1: Check if any markdown files exist
         md_files = []
         try:
-            md_files = [
-                f for f in os.listdir(dir_info["paper_dir"]) if f.endswith(".md")
-            ]
+            md_files = [f for f in os.listdir(dir_info["paper_dir"]) if f.endswith(".md")]
         except Exception as e:
             print(f"⚠️ Error reading paper directory: {e}")
 
@@ -661,7 +635,7 @@ async def orchestrate_document_preprocessing_agent(
         # Step 2: Read document content to determine size
         md_path = os.path.join(dir_info["paper_dir"], md_files[0])
         try:
-            with open(md_path, "r", encoding="utf-8") as f:
+            with open(md_path, encoding="utf-8") as f:
                 document_content = f.read()
         except Exception as e:
             print(f"⚠️ Error reading document content: {e}")
@@ -687,9 +661,7 @@ async def orchestrate_document_preprocessing_agent(
             print("🔧 Using intelligent document segmentation workflow...")
 
             # Prepare document segments using the segmentation agent
-            segmentation_result = await prepare_document_segments(
-                paper_dir=dir_info["paper_dir"], logger=logger
-            )
+            segmentation_result = await prepare_document_segments(paper_dir=dir_info["paper_dir"], logger=logger)
 
             if segmentation_result["status"] == "success":
                 print("✅ Document segmentation completed successfully!")
@@ -703,18 +675,14 @@ async def orchestrate_document_preprocessing_agent(
                 return segmentation_result
 
             else:
-                print(
-                    f"⚠️ Document segmentation failed: {segmentation_result.get('error_message', 'Unknown error')}"
-                )
+                print(f"⚠️ Document segmentation failed: {segmentation_result.get('error_message', 'Unknown error')}")
                 print("   Falling back to traditional full-document processing...")
                 dir_info["segments_ready"] = False
                 dir_info["use_segmentation"] = False
 
                 return {
                     "status": "fallback_to_traditional",
-                    "original_error": segmentation_result.get(
-                        "error_message", "Unknown error"
-                    ),
+                    "original_error": segmentation_result.get("error_message", "Unknown error"),
                     "paper_dir": dir_info["paper_dir"],
                     "segments_ready": False,
                     "use_segmentation": False,
@@ -751,7 +719,7 @@ async def orchestrate_document_preprocessing_agent(
 
 
 async def orchestrate_code_planning_agent(
-    dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None
+    dir_info: dict[str, str], logger, progress_callback: Callable | None = None
 ):
     """
     Orchestrate intelligent code planning with automated design analysis.
@@ -775,9 +743,7 @@ async def orchestrate_code_planning_agent(
         use_segmentation = dir_info.get("use_segmentation", True)
         print(f"📊 Planning mode: {'Segmented' if use_segmentation else 'Traditional'}")
 
-        initial_plan_result = await run_code_analyzer(
-            dir_info["paper_dir"], logger, use_segmentation=use_segmentation
-        )
+        initial_plan_result = await run_code_analyzer(dir_info["paper_dir"], logger, use_segmentation=use_segmentation)
         with open(initial_plan_path, "w", encoding="utf-8") as f:
             f.write(initial_plan_result)
         print(f"Initial plan saved to {initial_plan_path}")
@@ -785,9 +751,9 @@ async def orchestrate_code_planning_agent(
 
 async def automate_repository_acquisition_agent(
     reference_result: str,
-    dir_info: Dict[str, str],
+    dir_info: dict[str, str],
     logger,
-    progress_callback: Optional[Callable] = None,
+    progress_callback: Callable | None = None,
 ):
     """
     Automate intelligent repository acquisition with AI-guided selection.
@@ -807,9 +773,7 @@ async def automate_repository_acquisition_agent(
     await asyncio.sleep(5)  # Brief pause for stability
 
     try:
-        download_result = await github_repo_download(
-            reference_result, dir_info["paper_dir"], logger
-        )
+        download_result = await github_repo_download(reference_result, dir_info["paper_dir"], logger)
 
         # Save download results
         with open(dir_info["download_path"], "w", encoding="utf-8") as f:
@@ -822,28 +786,17 @@ async def automate_repository_acquisition_agent(
             downloaded_repos = [
                 d
                 for d in os.listdir(code_base_path)
-                if os.path.isdir(os.path.join(code_base_path, d))
-                and not d.startswith(".")
+                if os.path.isdir(os.path.join(code_base_path, d)) and not d.startswith(".")
             ]
 
             if downloaded_repos:
-                print(
-                    f"Successfully downloaded {len(downloaded_repos)} repositories: {downloaded_repos}"
-                )
+                print(f"Successfully downloaded {len(downloaded_repos)} repositories: {downloaded_repos}")
             else:
-                print(
-                    "GitHub download phase completed, but no repositories were found in the code_base directory"
-                )
+                print("GitHub download phase completed, but no repositories were found in the code_base directory")
                 print("This might indicate:")
-                print(
-                    "1. No relevant repositories were identified in the reference analysis"
-                )
-                print(
-                    "2. Repository downloads failed due to access permissions or network issues"
-                )
-                print(
-                    "3. The download agent encountered errors during the download process"
-                )
+                print("1. No relevant repositories were identified in the reference analysis")
+                print("2. Repository downloads failed due to access permissions or network issues")
+                print("3. The download agent encountered errors during the download process")
         else:
             print(f"Code base directory was not created: {code_base_path}")
 
@@ -858,8 +811,8 @@ async def automate_repository_acquisition_agent(
 
 
 async def orchestrate_codebase_intelligence_agent(
-    dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None
-) -> Dict:
+    dir_info: dict[str, str], logger, progress_callback: Callable | None = None
+) -> dict:
     """
     Orchestrate intelligent codebase analysis with automated knowledge extraction.
 
@@ -877,9 +830,7 @@ async def orchestrate_codebase_intelligence_agent(
     if progress_callback:
         progress_callback(70, "🧮 Orchestrating codebase intelligence analysis...")
 
-    print(
-        "Initiating intelligent codebase analysis with AI-powered relationship mapping..."
-    )
+    print("Initiating intelligent codebase analysis with AI-powered relationship mapping...")
     await asyncio.sleep(2)  # Brief pause before starting indexing
 
     # Check if code_base directory exists and has content
@@ -985,11 +936,11 @@ async def orchestrate_codebase_intelligence_agent(
 
 
 async def synthesize_code_implementation_agent(
-    dir_info: Dict[str, str],
+    dir_info: dict[str, str],
     logger,
-    progress_callback: Optional[Callable] = None,
+    progress_callback: Callable | None = None,
     enable_indexing: bool = True,
-) -> Dict:
+) -> dict:
     """
     Synthesize intelligent code implementation with automated development.
 
@@ -1008,17 +959,13 @@ async def synthesize_code_implementation_agent(
     if progress_callback:
         progress_callback(85, "🔬 Synthesizing intelligent code implementation...")
 
-    print(
-        "Launching intelligent code synthesis with AI-driven implementation strategies..."
-    )
+    print("Launching intelligent code synthesis with AI-driven implementation strategies...")
     await asyncio.sleep(3)  # Brief pause before starting implementation
 
     try:
         # Create code implementation workflow instance based on indexing preference
         if enable_indexing:
-            print(
-                "🔍 Using enhanced code implementation workflow with reference indexing..."
-            )
+            print("🔍 Using enhanced code implementation workflow with reference indexing...")
             code_workflow = CodeImplementationWorkflowWithIndex()
         else:
             print("⚡ Using standard code implementation workflow (fast mode)...")
@@ -1041,24 +988,16 @@ async def synthesize_code_implementation_agent(
                 print(f"Code directory: {implementation_result['code_directory']}")
 
                 # Save implementation results to file
-                with open(
-                    dir_info["implementation_report_path"], "w", encoding="utf-8"
-                ) as f:
+                with open(dir_info["implementation_report_path"], "w", encoding="utf-8") as f:
                     f.write(str(implementation_result))
-                print(
-                    f"Implementation report saved to {dir_info['implementation_report_path']}"
-                )
+                print(f"Implementation report saved to {dir_info['implementation_report_path']}")
 
             else:
-                print(
-                    f"Code implementation failed: {implementation_result.get('message', 'Unknown error')}"
-                )
+                print(f"Code implementation failed: {implementation_result.get('message', 'Unknown error')}")
 
             return implementation_result
         else:
-            print(
-                f"Initial plan file not found at {dir_info['initial_plan_path']}, skipping code implementation"
-            )
+            print(f"Initial plan file not found at {dir_info['initial_plan_path']}, skipping code implementation")
             return {
                 "status": "warning",
                 "message": "Initial plan not found - code implementation skipped",
@@ -1090,9 +1029,7 @@ async def run_chat_planning_agent(user_input: str, logger) -> str:
         print(f"Input preview: {user_input[:200] if user_input else 'None'}...")
 
         if not user_input or user_input.strip() == "":
-            raise ValueError(
-                "Empty or None user_input provided to run_chat_planning_agent"
-            )
+            raise ValueError("Empty or None user_input provided to run_chat_planning_agent")
 
         # Create the chat planning agent
         chat_planning_agent = Agent(
@@ -1113,9 +1050,7 @@ async def run_chat_planning_agent(user_input: str, logger) -> str:
                 print(f"Failed to list tools: {e}")
 
             try:
-                planner = await chat_planning_agent.attach_llm(
-                    get_preferred_llm_class()
-                )
+                planner = await chat_planning_agent.attach_llm(get_preferred_llm_class())
                 print("✅ LLM attached successfully")
             except Exception as e:
                 print(f"❌ Failed to attach LLM: {e}")
@@ -1140,9 +1075,7 @@ User Requirements:
 Please provide a detailed implementation plan that covers all aspects needed for successful development."""
 
             try:
-                raw_result = await planner.generate_str(
-                    message=formatted_message, request_params=planning_params
-                )
+                raw_result = await planner.generate_str(message=formatted_message, request_params=planning_params)
 
                 print("✅ Planning request completed")
                 print(f"Raw result type: {type(raw_result)}")
@@ -1159,9 +1092,7 @@ Please provide a detailed implementation plan that covers all aspects needed for
 
             # Log to SimpleLLMLogger
             if hasattr(logger, "log_response"):
-                logger.log_response(
-                    raw_result, model="ChatPlanningAgent", agent="ChatPlanningAgent"
-                )
+                logger.log_response(raw_result, model="ChatPlanningAgent", agent="ChatPlanningAgent")
 
             if not raw_result or raw_result.strip() == "":
                 print("❌ CRITICAL: Planning result is empty!")
@@ -1181,7 +1112,7 @@ Please provide a detailed implementation plan that covers all aspects needed for
 async def execute_multi_agent_research_pipeline(
     input_source: str,
     logger,
-    progress_callback: Optional[Callable] = None,
+    progress_callback: Callable | None = None,
     enable_indexing: bool = True,
 ) -> str:
     """
@@ -1236,57 +1167,39 @@ async def execute_multi_agent_research_pipeline(
             (
                 analysis_result,
                 download_result,
-            ) = await orchestrate_research_analysis_agent(
-                input_source, logger, progress_callback
-            )
+            ) = await orchestrate_research_analysis_agent(input_source, logger, progress_callback)
         else:
             download_result = input_source  # Use input directly if already processed
 
         # Phase 3: Workspace Infrastructure Synthesis
         if progress_callback:
-            progress_callback(
-                40, "🏗️ Synthesizing intelligent workspace infrastructure..."
-            )
+            progress_callback(40, "🏗️ Synthesizing intelligent workspace infrastructure...")
 
-        dir_info = await synthesize_workspace_infrastructure_agent(
-            download_result, logger, workspace_dir
-        )
+        dir_info = await synthesize_workspace_infrastructure_agent(download_result, logger, workspace_dir)
         await asyncio.sleep(30)
 
         # Phase 3.5: Document Segmentation and Preprocessing
 
-        segmentation_result = await orchestrate_document_preprocessing_agent(
-            dir_info, logger
-        )
+        segmentation_result = await orchestrate_document_preprocessing_agent(dir_info, logger)
 
         # Handle segmentation result
         if segmentation_result["status"] == "success":
             print("✅ Document preprocessing completed successfully!")
-            print(
-                f"   📊 Using segmentation: {dir_info.get('use_segmentation', False)}"
-            )
+            print(f"   📊 Using segmentation: {dir_info.get('use_segmentation', False)}")
             if dir_info.get("segments_ready", False):
-                print(
-                    f"   📁 Segments directory: {segmentation_result.get('segments_dir', 'N/A')}"
-                )
+                print(f"   📁 Segments directory: {segmentation_result.get('segments_dir', 'N/A')}")
         elif segmentation_result["status"] == "fallback_to_traditional":
             print("⚠️ Document segmentation failed, using traditional processing")
-            print(
-                f"   Original error: {segmentation_result.get('original_error', 'Unknown')}"
-            )
+            print(f"   Original error: {segmentation_result.get('original_error', 'Unknown')}")
         else:
-            print(
-                f"⚠️ Document preprocessing encountered issues: {segmentation_result.get('error_message', 'Unknown')}"
-            )
+            print(f"⚠️ Document preprocessing encountered issues: {segmentation_result.get('error_message', 'Unknown')}")
 
         # Phase 4: Code Planning Orchestration
         await orchestrate_code_planning_agent(dir_info, logger, progress_callback)
 
         # Phase 5: Reference Intelligence (only when indexing is enabled)
         if enable_indexing:
-            reference_result = await orchestrate_reference_intelligence_agent(
-                dir_info, logger, progress_callback
-            )
+            reference_result = await orchestrate_reference_intelligence_agent(dir_info, logger, progress_callback)
         else:
             print("🔶 Skipping reference intelligence analysis (fast mode enabled)")
             # Create empty reference analysis result to maintain file structure consistency
@@ -1296,22 +1209,16 @@ async def execute_multi_agent_research_pipeline(
 
         # Phase 6: Repository Acquisition Automation (optional)
         if enable_indexing:
-            await automate_repository_acquisition_agent(
-                reference_result, dir_info, logger, progress_callback
-            )
+            await automate_repository_acquisition_agent(reference_result, dir_info, logger, progress_callback)
         else:
             print("🔶 Skipping automated repository acquisition (fast mode enabled)")
             # Create empty download result file to maintain file structure consistency
             with open(dir_info["download_path"], "w", encoding="utf-8") as f:
-                f.write(
-                    "Automated repository acquisition skipped - fast mode enabled for optimized processing"
-                )
+                f.write("Automated repository acquisition skipped - fast mode enabled for optimized processing")
 
         # Phase 7: Codebase Intelligence Orchestration (optional)
         if enable_indexing:
-            index_result = await orchestrate_codebase_intelligence_agent(
-                dir_info, logger, progress_callback
-            )
+            index_result = await orchestrate_codebase_intelligence_agent(dir_info, logger, progress_callback)
         else:
             print("🔶 Skipping codebase intelligence orchestration (fast mode enabled)")
             # Create a skipped indexing result
@@ -1330,42 +1237,30 @@ async def execute_multi_agent_research_pipeline(
 
         # Final Status Report
         if enable_indexing:
-            pipeline_summary = (
-                f"Multi-agent research pipeline completed for {dir_info['paper_dir']}"
-            )
+            pipeline_summary = f"Multi-agent research pipeline completed for {dir_info['paper_dir']}"
         else:
             pipeline_summary = f"Multi-agent research pipeline completed (fast mode) for {dir_info['paper_dir']}"
 
         # Add indexing status to summary
         if not enable_indexing:
-            pipeline_summary += (
-                "\n⚡ Fast mode: GitHub download and codebase indexing skipped"
-            )
+            pipeline_summary += "\n⚡ Fast mode: GitHub download and codebase indexing skipped"
         elif index_result["status"] == "skipped":
             pipeline_summary += f"\n🔶 Codebase indexing: {index_result['message']}"
         elif index_result["status"] == "error":
-            pipeline_summary += (
-                f"\n❌ Codebase indexing failed: {index_result['message']}"
-            )
+            pipeline_summary += f"\n❌ Codebase indexing failed: {index_result['message']}"
         elif index_result["status"] == "success":
             pipeline_summary += "\n✅ Codebase indexing completed successfully"
 
         # Add implementation status to summary
         if implementation_result["status"] == "success":
             pipeline_summary += "\n🎉 Code implementation completed successfully!"
-            pipeline_summary += (
-                f"\n📁 Code generated in: {implementation_result['code_directory']}"
-            )
+            pipeline_summary += f"\n📁 Code generated in: {implementation_result['code_directory']}"
             return pipeline_summary
         elif implementation_result["status"] == "warning":
-            pipeline_summary += (
-                f"\n⚠️ Code implementation: {implementation_result['message']}"
-            )
+            pipeline_summary += f"\n⚠️ Code implementation: {implementation_result['message']}"
             return pipeline_summary
         else:
-            pipeline_summary += (
-                f"\n❌ Code implementation failed: {implementation_result['message']}"
-            )
+            pipeline_summary += f"\n❌ Code implementation failed: {implementation_result['message']}"
             return pipeline_summary
 
     except Exception as e:
@@ -1374,9 +1269,7 @@ async def execute_multi_agent_research_pipeline(
 
 
 # Backward compatibility alias (deprecated)
-async def paper_code_preparation(
-    input_source: str, logger, progress_callback: Optional[Callable] = None
-) -> str:
+async def paper_code_preparation(input_source: str, logger, progress_callback: Callable | None = None) -> str:
     """
     Deprecated: Use execute_multi_agent_research_pipeline instead.
 
@@ -1388,18 +1281,14 @@ async def paper_code_preparation(
     Returns:
         str: Pipeline result
     """
-    print(
-        "paper_code_preparation is deprecated. Use execute_multi_agent_research_pipeline instead."
-    )
-    return await execute_multi_agent_research_pipeline(
-        input_source, logger, progress_callback
-    )
+    print("paper_code_preparation is deprecated. Use execute_multi_agent_research_pipeline instead.")
+    return await execute_multi_agent_research_pipeline(input_source, logger, progress_callback)
 
 
 async def execute_chat_based_planning_pipeline(
     user_input: str,
     logger,
-    progress_callback: Optional[Callable] = None,
+    progress_callback: Callable | None = None,
     enable_indexing: bool = True,
 ) -> str:
     """
@@ -1451,9 +1340,7 @@ async def execute_chat_based_planning_pipeline(
 
         # Phase 2: Workspace Infrastructure Synthesis
         if progress_callback:
-            progress_callback(
-                50, "🏗️ Synthesizing intelligent workspace infrastructure..."
-            )
+            progress_callback(50, "🏗️ Synthesizing intelligent workspace infrastructure...")
 
         # Create workspace directory structure for chat mode
         # First, let's create a temporary directory structure that mimics a paper workspace
@@ -1512,9 +1399,7 @@ The following implementation plan was generated by the AI chat planning agent:
             }
         )
 
-        dir_info = await synthesize_workspace_infrastructure_agent(
-            synthetic_download_result, logger, workspace_dir
-        )
+        dir_info = await synthesize_workspace_infrastructure_agent(synthetic_download_result, logger, workspace_dir)
         await asyncio.sleep(10)  # Brief pause for file system operations
 
         # Phase 3: Save Planning Result
@@ -1541,22 +1426,14 @@ The following implementation plan was generated by the AI chat planning agent:
         # Add implementation status to summary
         if implementation_result["status"] == "success":
             pipeline_summary += "\n🎉 Code implementation completed successfully!"
-            pipeline_summary += (
-                f"\n📁 Code generated in: {implementation_result['code_directory']}"
-            )
-            pipeline_summary += (
-                "\n💬 Generated from user requirements via chat interface"
-            )
+            pipeline_summary += f"\n📁 Code generated in: {implementation_result['code_directory']}"
+            pipeline_summary += "\n💬 Generated from user requirements via chat interface"
             return pipeline_summary
         elif implementation_result["status"] == "warning":
-            pipeline_summary += (
-                f"\n⚠️ Code implementation: {implementation_result['message']}"
-            )
+            pipeline_summary += f"\n⚠️ Code implementation: {implementation_result['message']}"
             return pipeline_summary
         else:
-            pipeline_summary += (
-                f"\n❌ Code implementation failed: {implementation_result['message']}"
-            )
+            pipeline_summary += f"\n❌ Code implementation failed: {implementation_result['message']}"
             return pipeline_summary
 
     except Exception as e:

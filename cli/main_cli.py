@@ -7,10 +7,10 @@ DeepCode CLI - Open-Source Code Agent
 ⚡ Revolutionizing Research Reproducibility through Multi-Agent Architecture
 """
 
+import argparse
+import asyncio
 import os
 import sys
-import asyncio
-import argparse
 
 # 禁止生成.pyc文件
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -54,9 +54,7 @@ def check_environment():
 
     # 检查Python版本
     if sys.version_info < (3, 8):
-        print(
-            f"{Colors.FAIL}❌ Python 3.8+ required. Current: {sys.version}{Colors.ENDC}"
-        )
+        print(f"{Colors.FAIL}❌ Python 3.8+ required. Current: {sys.version}{Colors.ENDC}")
         return False
 
     print(f"{Colors.OKGREEN}✅ Python {sys.version.split()[0]} - OK{Colors.ENDC}")
@@ -78,9 +76,7 @@ def check_environment():
             print(f"{Colors.FAIL}❌ {desc} - Missing{Colors.ENDC}")
 
     if missing_modules:
-        print(
-            f"{Colors.FAIL}❌ Missing required modules: {', '.join(missing_modules)}{Colors.ENDC}"
-        )
+        print(f"{Colors.FAIL}❌ Missing required modules: {', '.join(missing_modules)}{Colors.ENDC}")
         return False
 
     print(f"{Colors.OKGREEN}✅ Environment check passed{Colors.ENDC}")
@@ -112,13 +108,9 @@ def parse_arguments():
         """,
     )
 
-    parser.add_argument(
-        "--file", "-f", type=str, help="Process a specific file (PDF, DOCX, TXT, etc.)"
-    )
+    parser.add_argument("--file", "-f", type=str, help="Process a specific file (PDF, DOCX, TXT, etc.)")
 
-    parser.add_argument(
-        "--url", "-u", type=str, help="Process a research paper from URL"
-    )
+    parser.add_argument("--url", "-u", type=str, help="Process a research paper from URL")
 
     parser.add_argument(
         "--chat",
@@ -147,9 +139,7 @@ def parse_arguments():
         help="Document size threshold (characters) to trigger segmentation (default: 50000)",
     )
 
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
 
     return parser.parse_args()
 
@@ -157,30 +147,22 @@ def parse_arguments():
 async def run_direct_processing(app: CLIApp, input_source: str, input_type: str):
     """直接处理模式（非交互式）"""
     try:
-        print(
-            f"\n{Colors.BOLD}{Colors.CYAN}🚀 Starting direct processing mode...{Colors.ENDC}"
-        )
+        print(f"\n{Colors.BOLD}{Colors.CYAN}🚀 Starting direct processing mode...{Colors.ENDC}")
         print(f"{Colors.CYAN}Input: {input_source}{Colors.ENDC}")
         print(f"{Colors.CYAN}Type: {input_type}{Colors.ENDC}")
-        print(
-            f"{Colors.CYAN}Mode: {'🧠 Comprehensive' if app.cli.enable_indexing else '⚡ Optimized'}{Colors.ENDC}"
-        )
+        print(f"{Colors.CYAN}Mode: {'🧠 Comprehensive' if app.cli.enable_indexing else '⚡ Optimized'}{Colors.ENDC}")
 
         # 初始化应用
         init_result = await app.initialize_mcp_app()
         if init_result["status"] != "success":
-            print(
-                f"{Colors.FAIL}❌ Initialization failed: {init_result['message']}{Colors.ENDC}"
-            )
+            print(f"{Colors.FAIL}❌ Initialization failed: {init_result['message']}{Colors.ENDC}")
             return False
 
         # 处理输入
         result = await app.process_input(input_source, input_type)
 
         if result["status"] == "success":
-            print(
-                f"\n{Colors.BOLD}{Colors.OKGREEN}🎉 Processing completed successfully!{Colors.ENDC}"
-            )
+            print(f"\n{Colors.BOLD}{Colors.OKGREEN}🎉 Processing completed successfully!{Colors.ENDC}")
             return True
         else:
             print(
@@ -205,9 +187,7 @@ async def main():
 
     # 检查环境
     if not check_environment():
-        print(
-            f"\n{Colors.FAIL}🚨 Environment check failed. Please fix the issues and try again.{Colors.ENDC}"
-        )
+        print(f"\n{Colors.FAIL}🚨 Environment check failed. Please fix the issues and try again.{Colors.ENDC}")
         sys.exit(1)
 
     try:
@@ -217,19 +197,13 @@ async def main():
         # 设置配置
         if args.optimized:
             app.cli.enable_indexing = False
-            print(
-                f"\n{Colors.YELLOW}⚡ Optimized mode enabled - indexing disabled{Colors.ENDC}"
-            )
+            print(f"\n{Colors.YELLOW}⚡ Optimized mode enabled - indexing disabled{Colors.ENDC}")
         else:
-            print(
-                f"\n{Colors.GREEN}🧠 Comprehensive mode enabled - full intelligence analysis{Colors.ENDC}"
-            )
+            print(f"\n{Colors.GREEN}🧠 Comprehensive mode enabled - full intelligence analysis{Colors.ENDC}")
 
         # Configure document segmentation settings
         if hasattr(args, "disable_segmentation") and args.disable_segmentation:
-            print(
-                f"\n{Colors.MAGENTA}📄 Document segmentation disabled - using traditional processing{Colors.ENDC}"
-            )
+            print(f"\n{Colors.MAGENTA}📄 Document segmentation disabled - using traditional processing{Colors.ENDC}")
             app.segmentation_config = {
                 "enabled": False,
                 "size_threshold_chars": args.segmentation_threshold,

@@ -8,11 +8,11 @@ Specialized in executing LLM-generated shell commands to create file tree struct
 
 import subprocess
 from pathlib import Path
-from typing import List, Dict
-from mcp.server.models import InitializationOptions
+
+import mcp.server.stdio
 import mcp.types as types
 from mcp.server import NotificationOptions, Server
-import mcp.server.stdio
+from mcp.server.models import InitializationOptions
 
 # 创建MCP服务器实例 / Create MCP server instance
 app = Server("command-executor")
@@ -94,13 +94,9 @@ async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent
     """
     try:
         if name == "execute_commands":
-            return await execute_command_batch(
-                arguments.get("commands", ""), arguments.get("working_directory", ".")
-            )
+            return await execute_command_batch(arguments.get("commands", ""), arguments.get("working_directory", "."))
         elif name == "execute_single_command":
-            return await execute_single_command(
-                arguments.get("command", ""), arguments.get("working_directory", ".")
-            )
+            return await execute_single_command(arguments.get("command", ""), arguments.get("working_directory", "."))
         else:
             raise ValueError(f"未知工具 / Unknown tool: {name}")
 
@@ -113,9 +109,7 @@ async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent
         ]
 
 
-async def execute_command_batch(
-    commands: str, working_directory: str
-) -> list[types.TextContent]:
+async def execute_command_batch(commands: str, working_directory: str) -> list[types.TextContent]:
     """
     执行多个shell命令 / Execute multiple shell commands
 
@@ -131,16 +125,10 @@ async def execute_command_batch(
         Path(working_directory).mkdir(parents=True, exist_ok=True)
 
         # 分割命令行 / Split command lines
-        command_lines = [
-            cmd.strip() for cmd in commands.strip().split("\n") if cmd.strip()
-        ]
+        command_lines = [cmd.strip() for cmd in commands.strip().split("\n") if cmd.strip()]
 
         if not command_lines:
-            return [
-                types.TextContent(
-                    type="text", text="没有提供有效命令 / No valid commands provided"
-                )
-            ]
+            return [types.TextContent(type="text", text="没有提供有效命令 / No valid commands provided")]
 
         results = []
         stats = {"successful": 0, "failed": 0, "timeout": 0}
@@ -190,9 +178,7 @@ async def execute_command_batch(
         ]
 
 
-async def execute_single_command(
-    command: str, working_directory: str
-) -> list[types.TextContent]:
+async def execute_single_command(command: str, working_directory: str) -> list[types.TextContent]:
     """
     执行单个shell命令 / Execute single shell command
 
@@ -223,22 +209,12 @@ async def execute_single_command(
         return [types.TextContent(type="text", text=output)]
 
     except subprocess.TimeoutExpired:
-        return [
-            types.TextContent(
-                type="text", text=f"⏱️ 命令超时 / Command timeout: {command}"
-            )
-        ]
+        return [types.TextContent(type="text", text=f"⏱️ 命令超时 / Command timeout: {command}")]
     except Exception as e:
-        return [
-            types.TextContent(
-                type="text", text=f"💥 命令执行错误 / Command execution error: {str(e)}"
-            )
-        ]
+        return [types.TextContent(type="text", text=f"💥 命令执行错误 / Command execution error: {str(e)}")]
 
 
-def generate_execution_summary(
-    working_directory: str, command_lines: List[str], stats: Dict[str, int]
-) -> str:
+def generate_execution_summary(working_directory: str, command_lines: list[str], stats: dict[str, int]) -> str:
     """
     生成执行总结 / Generate execution summary
 
@@ -263,9 +239,7 @@ def generate_execution_summary(
 {'-'*50}"""
 
 
-def format_single_command_result(
-    command: str, working_directory: str, result: subprocess.CompletedProcess
-) -> str:
+def format_single_command_result(command: str, working_directory: str, result: subprocess.CompletedProcess) -> str:
     """
     格式化单命令执行结果 / Format single command execution result
 

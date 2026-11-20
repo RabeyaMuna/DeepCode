@@ -3,6 +3,7 @@ PDF utility functions for the DeepCode agent system.
 """
 
 from pathlib import Path
+
 import PyPDF2
 
 

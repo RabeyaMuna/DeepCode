@@ -21,7 +21,7 @@ import logging
 import os
 import time
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 
 class ConciseMemoryAgent:
@@ -43,9 +43,9 @@ class ConciseMemoryAgent:
     def __init__(
         self,
         initial_plan_content: str,
-        logger: Optional[logging.Logger] = None,
-        target_directory: Optional[str] = None,
-        default_models: Optional[Dict[str, str]] = None,
+        logger: logging.Logger | None = None,
+        target_directory: str | None = None,
+        default_models: dict[str, str] | None = None,
     ):
         """
         Initialize Concise Memory Agent
@@ -66,9 +66,7 @@ class ConciseMemoryAgent:
         }
 
         # Memory state tracking - new logic: trigger after each write_file
-        self.last_write_file_detected = (
-            False  # Track if write_file was called in current iteration
-        )
+        self.last_write_file_detected = False  # Track if write_file was called in current iteration
         self.should_clear_memory_next = False  # Flag to clear memory in next round
         self.current_round = 0
 
@@ -85,9 +83,7 @@ class ConciseMemoryAgent:
             self.save_path = "./deepcode_lab/papers/1/"
 
         # Code summary file path
-        self.code_summary_path = os.path.join(
-            self.save_path, "implement_code_summary.md"
-        )
+        self.code_summary_path = os.path.join(self.save_path, "implement_code_summary.md")
 
         # Current round tool results storage
         self.current_round_tool_results = []
@@ -98,14 +94,10 @@ class ConciseMemoryAgent:
         # Store Next Steps information temporarily (not saved to file)
         self.current_next_steps = ""
 
-        self.logger.info(
-            f"Concise Memory Agent initialized with target directory: {self.save_path}"
-        )
+        self.logger.info(f"Concise Memory Agent initialized with target directory: {self.save_path}")
         self.logger.info(f"Code summary will be saved to: {self.code_summary_path}")
         # self.logger.info(f"🤖 Using models - Anthropic: {self.default_models['anthropic']}, OpenAI: {self.default_models['openai']}")
-        self.logger.info(
-            "📝 NEW LOGIC: Memory clearing triggered after each write_file call"
-        )
+        self.logger.info("📝 NEW LOGIC: Memory clearing triggered after each write_file call")
 
     def _create_default_logger(self) -> logging.Logger:
         """Create default logger"""
@@ -113,7 +105,7 @@ class ConciseMemoryAgent:
         logger.setLevel(logging.INFO)
         return logger
 
-    def _parse_phase_structure(self) -> Dict[str, List[str]]:
+    def _parse_phase_structure(self) -> dict[str, list[str]]:
         """Parse implementation phases from initial plan"""
         try:
             phases = {}
@@ -146,7 +138,7 @@ class ConciseMemoryAgent:
             self.logger.warning(f"Failed to parse phase structure: {e}")
             return {}
 
-    def _extract_all_files_from_plan(self) -> List[str]:
+    def _extract_all_files_from_plan(self) -> list[str]:
         """
         Extract all file paths from the file_structure section in initial plan
         Handles multiple formats: tree structure, YAML, and simple lists
@@ -173,9 +165,7 @@ class ConciseMemoryAgent:
             cleaned_files = self._clean_and_validate_files(files)
 
             # Log the extracted files
-            self.logger.info(
-                f"📁 Extracted {len(cleaned_files)} files from initial plan"
-            )
+            self.logger.info(f"📁 Extracted {len(cleaned_files)} files from initial plan")
             if cleaned_files:
                 self.logger.info(f"📁 Sample files: {cleaned_files[:3]}...")
 
@@ -185,7 +175,7 @@ class ConciseMemoryAgent:
             self.logger.error(f"Failed to extract files from initial plan: {e}")
             return []
 
-    def _extract_from_tree_structure(self, lines: List[str]) -> List[str]:
+    def _extract_from_tree_structure(self, lines: list[str]) -> list[str]:
         """Extract files from tree structure format - only from file_structure section"""
         files = []
         in_file_structure = False
@@ -197,12 +187,7 @@ class ConciseMemoryAgent:
                 in_file_structure = True
                 continue
             # Check for end of file_structure section (next YAML key)
-            elif (
-                in_file_structure
-                and line.strip()
-                and not line.startswith(" ")
-                and ":" in line
-            ):
+            elif in_file_structure and line.strip() and not line.startswith(" ") and ":" in line:
                 # This looks like a new YAML section, stop parsing
                 break
             elif not in_file_structure:
@@ -216,9 +201,7 @@ class ConciseMemoryAgent:
                 continue
 
             # Only process lines that look like file tree structure
-            if not any(
-                char in line for char in ["├", "└", "│", "-"]
-            ) and not line.startswith("    "):
+            if not any(char in line for char in ["├", "└", "│", "-"]) and not line.startswith("    "):
                 continue
 
             # Remove tree characters and get the clean name
@@ -237,9 +220,7 @@ class ConciseMemoryAgent:
                     indent_level += 1
                 else:
                     break
-            indent_level = max(
-                0, (indent_level - 4) // 4
-            )  # Normalize to directory levels
+            indent_level = max(0, (indent_level - 4) // 4)  # Normalize to directory levels
 
             # Extract filename (remove comments)
             if "#" in clean_line:
@@ -270,7 +251,7 @@ class ConciseMemoryAgent:
 
         return files
 
-    def _extract_from_simple_list(self, lines: List[str]) -> List[str]:
+    def _extract_from_simple_list(self, lines: list[str]) -> list[str]:
         """Extract files from simple list format (- filename)"""
         files = []
 
@@ -290,7 +271,7 @@ class ConciseMemoryAgent:
 
         return files
 
-    def _extract_from_plan_content(self, lines: List[str]) -> List[str]:
+    def _extract_from_plan_content(self, lines: list[str]) -> list[str]:
         """Extract files from anywhere in the plan content"""
         files = []
 
@@ -331,7 +312,7 @@ class ConciseMemoryAgent:
 
         return files
 
-    def _clean_and_validate_files(self, files: List[str]) -> List[str]:
+    def _clean_and_validate_files(self, files: list[str]) -> list[str]:
         """Clean and validate extracted file paths - only keep code files"""
         cleaned_files = []
 
@@ -384,18 +365,12 @@ class ConciseMemoryAgent:
                 continue
 
             # Only include files with code extensions
-            has_code_extension = any(
-                cleaned_path.lower().endswith(ext) for ext in code_extensions
-            )
+            has_code_extension = any(cleaned_path.lower().endswith(ext) for ext in code_extensions)
             if not has_code_extension:
                 continue
 
             # Skip files that look like YAML keys or config entries
-            if (
-                ":" in cleaned_path
-                and not cleaned_path.endswith(".yaml")
-                and not cleaned_path.endswith(".yml")
-            ):
+            if ":" in cleaned_path and not cleaned_path.endswith(".yaml") and not cleaned_path.endswith(".yml"):
                 continue
 
             # Skip paths that contain invalid characters for file paths
@@ -408,9 +383,7 @@ class ConciseMemoryAgent:
 
         return sorted(cleaned_files)
 
-    def record_file_implementation(
-        self, file_path: str, implementation_content: str = ""
-    ):
+    def record_file_implementation(self, file_path: str, implementation_content: str = ""):
         """
         Record a newly implemented file (simplified version)
         NEW LOGIC: File implementation is tracked via write_file tool detection
@@ -452,15 +425,11 @@ class ConciseMemoryAgent:
             self.record_file_implementation(file_path, implementation_content)
 
             # Create prompt for LLM summary
-            summary_prompt = self._create_code_summary_prompt(
-                file_path, implementation_content, files_implemented
-            )
+            summary_prompt = self._create_code_summary_prompt(file_path, implementation_content, files_implemented)
             summary_messages = [{"role": "user", "content": summary_prompt}]
 
             # Get LLM-generated summary
-            llm_response = await self._call_llm_for_summary(
-                client, client_type, summary_messages
-            )
+            llm_response = await self._call_llm_for_summary(client, client_type, summary_messages)
             llm_summary = llm_response.get("content", "")
 
             # Extract different sections from LLM summary
@@ -490,17 +459,11 @@ class ConciseMemoryAgent:
             return formatted_summary
 
         except Exception as e:
-            self.logger.error(
-                f"Failed to create LLM-based code implementation summary: {e}"
-            )
+            self.logger.error(f"Failed to create LLM-based code implementation summary: {e}")
             # Fallback to simple summary
-            return self._create_fallback_code_summary(
-                file_path, implementation_content, files_implemented
-            )
+            return self._create_fallback_code_summary(file_path, implementation_content, files_implemented)
 
-    def _create_code_summary_prompt(
-        self, file_path: str, implementation_content: str, files_implemented: int
-    ) -> str:
+    def _create_code_summary_prompt(self, file_path: str, implementation_content: str, files_implemented: int) -> str:
         """
         Create prompt for LLM to generate code implementation summary
 
@@ -570,7 +533,7 @@ class ConciseMemoryAgent:
 
         return prompt
 
-    def _extract_summary_sections(self, llm_summary: str) -> Dict[str, str]:
+    def _extract_summary_sections(self, llm_summary: str) -> dict[str, str]:
         """
         Extract different sections from LLM-generated summary
 
@@ -596,9 +559,7 @@ class ConciseMemoryAgent:
                         sections[current_section] = "\n".join(current_content).strip()
                     current_section = "implementation_progress"
                     current_content = [line]  # Include the header
-                elif (
-                    "dependencies" in line_lower and "implementation" not in line_lower
-                ):
+                elif "dependencies" in line_lower and "implementation" not in line_lower:
                     if current_section and current_content:
                         sections[current_section] = "\n".join(current_content).strip()
                     current_section = "dependencies"
@@ -626,9 +587,7 @@ class ConciseMemoryAgent:
 
         return sections
 
-    def _format_code_implementation_summary(
-        self, file_path: str, llm_summary: str, files_implemented: int
-    ) -> str:
+    def _format_code_implementation_summary(self, file_path: str, llm_summary: str, files_implemented: int) -> str:
         """
         Format the LLM-generated summary into the final structure
 
@@ -644,9 +603,7 @@ class ConciseMemoryAgent:
 
         # Create formatted list of implemented files
         implemented_files_list = (
-            "\n".join([f"- {file}" for file in self.implemented_files])
-            if self.implemented_files
-            else "- None yet"
+            "\n".join([f"- {file}" for file in self.implemented_files]) if self.implemented_files else "- None yet"
         )
 
         formatted_summary = f"""# Code Implementation Summary
@@ -660,9 +617,7 @@ class ConciseMemoryAgent:
 """
         return formatted_summary
 
-    def _create_fallback_code_summary(
-        self, file_path: str, implementation_content: str, files_implemented: int
-    ) -> str:
+    def _create_fallback_code_summary(self, file_path: str, implementation_content: str, files_implemented: int) -> str:
         """
         Create fallback summary when LLM is unavailable
 
@@ -676,9 +631,7 @@ class ConciseMemoryAgent:
         """
         # Create formatted list of implemented files
         implemented_files_list = (
-            "\n".join([f"- {file}" for file in self.implemented_files])
-            if self.implemented_files
-            else "- None yet"
+            "\n".join([f"- {file}" for file in self.implemented_files]) if self.implemented_files else "- None yet"
         )
 
         summary = f"""# Code Implementation Summary
@@ -719,25 +672,19 @@ class ConciseMemoryAgent:
 
                 # Add clear separator between implementations
                 f.write("\n" + "=" * 80 + "\n")
-                f.write(
-                    f"## IMPLEMENTATION File {file_path}; ROUND {self.current_round} \n"
-                )
+                f.write(f"## IMPLEMENTATION File {file_path}; ROUND {self.current_round} \n")
                 f.write("=" * 80 + "\n\n")
 
                 # Write the new summary
                 f.write(new_summary)
                 f.write("\n\n")
 
-            self.logger.info(
-                f"Appended LLM-based code implementation summary to: {self.code_summary_path}"
-            )
+            self.logger.info(f"Appended LLM-based code implementation summary to: {self.code_summary_path}")
 
         except Exception as e:
             self.logger.error(f"Failed to save code implementation summary: {e}")
 
-    async def _call_llm_for_summary(
-        self, client, client_type: str, summary_messages: List[Dict]
-    ) -> Dict[str, Any]:
+    async def _call_llm_for_summary(self, client, client_type: str, summary_messages: list[dict]) -> dict[str, Any]:
         """
         Call LLM for code implementation summary generation ONLY
 
@@ -793,7 +740,7 @@ class ConciseMemoryAgent:
         else:
             raise ValueError(f"Unsupported client type: {client_type}")
 
-    def start_new_round(self, iteration: Optional[int] = None):
+    def start_new_round(self, iteration: int | None = None):
         """Start a new dialogue round and reset tool results
 
         Args:
@@ -813,9 +760,7 @@ class ConciseMemoryAgent:
         # These flags persist across rounds until memory optimization is applied
         # self.logger.info(f"🔄 Round {self.current_round} - Tool results cleared, memory flags preserved")
 
-    def record_tool_result(
-        self, tool_name: str, tool_input: Dict[str, Any], tool_result: Any
-    ):
+    def record_tool_result(self, tool_name: str, tool_input: dict[str, Any], tool_result: Any):
         """
         Record tool result for current round and detect write_file calls
 
@@ -864,9 +809,9 @@ class ConciseMemoryAgent:
     def create_concise_messages(
         self,
         system_prompt: str,
-        messages: List[Dict[str, Any]],
+        messages: list[dict[str, Any]],
         files_implemented: int,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Create concise message list for LLM input
         NEW LOGIC: Always clear after write_file, keep system_prompt + initial_plan + current round tools
@@ -881,15 +826,11 @@ class ConciseMemoryAgent:
         """
         if not self.last_write_file_detected:
             # Before any write_file, use normal flow
-            self.logger.info(
-                "🔄 Using normal conversation flow (before any write_file)"
-            )
+            self.logger.info("🔄 Using normal conversation flow (before any write_file)")
             return messages
 
         # After write_file detection, use concise approach with clean slate
-        self.logger.info(
-            f"🎯 Using CONCISE memory mode - Clear slate after write_file, Round {self.current_round}"
-        )
+        self.logger.info(f"🎯 Using CONCISE memory mode - Clear slate after write_file, Round {self.current_round}")
 
         concise_messages = []
 
@@ -994,7 +935,7 @@ class ConciseMemoryAgent:
         # self.logger.info(f"✅ Concise messages created: {len(concise_messages)} messages (original: {len(messages)})")
         return concise_messages
 
-    def _read_code_knowledge_base(self) -> Optional[str]:
+    def _read_code_knowledge_base(self) -> str | None:
         """
         Read the implement_code_summary.md file as code knowledge base
         Returns only the final/latest implementation entry, not all historical entries
@@ -1004,7 +945,7 @@ class ConciseMemoryAgent:
         """
         try:
             if os.path.exists(self.code_summary_path):
-                with open(self.code_summary_path, "r", encoding="utf-8") as f:
+                with open(self.code_summary_path, encoding="utf-8") as f:
                     content = f.read().strip()
 
                 if content:
@@ -1019,7 +960,7 @@ class ConciseMemoryAgent:
             self.logger.error(f"Failed to read code knowledge base: {e}")
             return None
 
-    def _extract_latest_implementation_entry(self, content: str) -> Optional[str]:
+    def _extract_latest_implementation_entry(self, content: str) -> str | None:
         """
         Extract the latest/final implementation entry from the implement_code_summary.md content
         Uses a simpler approach to find the last implementation section
@@ -1034,9 +975,7 @@ class ConciseMemoryAgent:
             import re
 
             # Pattern to match the start of implementation sections
-            section_pattern = (
-                r"={80}\s*\n## IMPLEMENTATION File .+?; ROUND \d+\s*\n={80}"
-            )
+            section_pattern = r"={80}\s*\n## IMPLEMENTATION File .+?; ROUND \d+\s*\n={80}"
 
             # Find all implementation section starts
             matches = list(re.finditer(section_pattern, content))
@@ -1045,13 +984,9 @@ class ConciseMemoryAgent:
                 # No implementation sections found
                 lines = content.split("\n")
                 fallback_content = (
-                    "\n".join(lines[:10]) + "\n... (truncated for brevity)"
-                    if len(lines) > 10
-                    else content
+                    "\n".join(lines[:10]) + "\n... (truncated for brevity)" if len(lines) > 10 else content
                 )
-                self.logger.info(
-                    "📖 No implementation sections found, using fallback content"
-                )
+                self.logger.info("📖 No implementation sections found, using fallback content")
                 return fallback_content
 
             # Get the start position of the last implementation section
@@ -1139,9 +1074,7 @@ class ConciseMemoryAgent:
 {self._format_tool_result_content(tool_result)}
 """)
             elif tool_name == "get_file_structure":
-                directory = tool_input.get(
-                    "directory_path", tool_input.get("path", "current")
-                )
+                directory = tool_input.get("directory_path", tool_input.get("path", "current"))
                 formatted_results.append(f"""
 **get_file_structure Result for {directory}:**
 {self._format_tool_result_content(tool_result)}
@@ -1166,9 +1099,7 @@ class ConciseMemoryAgent:
                 if isinstance(result_data, dict):
                     # Format key information
                     if result_data.get("status") == "summary_found":
-                        return (
-                            f"Summary found:\n{result_data.get('summary_content', '')}"
-                        )
+                        return f"Summary found:\n{result_data.get('summary_content', '')}"
                     elif result_data.get("status") == "no_summary":
                         return "No summary available"
                     else:
@@ -1180,7 +1111,7 @@ class ConciseMemoryAgent:
         else:
             return str(tool_result)
 
-    def get_memory_statistics(self, files_implemented: int = 0) -> Dict[str, Any]:
+    def get_memory_statistics(self, files_implemented: int = 0) -> dict[str, Any]:
         """Get memory agent statistics"""
         unimplemented_files = self.get_unimplemented_files()
         return {
@@ -1189,38 +1120,32 @@ class ConciseMemoryAgent:
             "current_round": self.current_round,
             "concise_mode_active": self.should_use_concise_mode(),
             "current_round_tool_results": len(self.current_round_tool_results),
-            "essential_tools_recorded": [
-                r["tool_name"] for r in self.current_round_tool_results
-            ],
+            "essential_tools_recorded": [r["tool_name"] for r in self.current_round_tool_results],
             "implemented_files_tracked": files_implemented,
             "implemented_files_list": self.implemented_files.copy(),
             "phases_parsed": len(self.phase_structure),
             "next_steps_available": bool(self.current_next_steps.strip()),
-            "next_steps_length": len(self.current_next_steps.strip())
-            if self.current_next_steps
-            else 0,
+            "next_steps_length": len(self.current_next_steps.strip()) if self.current_next_steps else 0,
             # File tracking statistics
             "total_files_in_plan": len(self.all_files_list),
             "files_implemented_count": len(self.implemented_files),
             "files_remaining_count": len(unimplemented_files),
             "all_files_list": self.all_files_list.copy(),
             "unimplemented_files_list": unimplemented_files,
-            "implementation_progress_percent": (
-                len(self.implemented_files) / len(self.all_files_list) * 100
-            )
+            "implementation_progress_percent": (len(self.implemented_files) / len(self.all_files_list) * 100)
             if self.all_files_list
             else 0,
         }
 
-    def get_implemented_files(self) -> List[str]:
+    def get_implemented_files(self) -> list[str]:
         """Get list of all implemented files"""
         return self.implemented_files.copy()
 
-    def get_all_files_list(self) -> List[str]:
+    def get_all_files_list(self) -> list[str]:
         """Get list of all files that should be implemented according to the plan"""
         return self.all_files_list.copy()
 
-    def get_unimplemented_files(self) -> List[str]:
+    def get_unimplemented_files(self) -> list[str]:
         """
         Get list of files that haven't been implemented yet
 
@@ -1231,7 +1156,7 @@ class ConciseMemoryAgent:
         unimplemented = [f for f in self.all_files_list if f not in implemented_set]
         return unimplemented
 
-    def get_formatted_files_lists(self) -> Dict[str, str]:
+    def get_formatted_files_lists(self) -> dict[str, str]:
         """
         Get formatted strings for implemented and unimplemented files
 
@@ -1239,9 +1164,7 @@ class ConciseMemoryAgent:
             Dictionary with 'implemented' and 'unimplemented' formatted lists
         """
         implemented_list = (
-            "\n".join([f"- {file}" for file in self.implemented_files])
-            if self.implemented_files
-            else "- None yet"
+            "\n".join([f"- {file}" for file in self.implemented_files]) if self.implemented_files else "- None yet"
         )
 
         unimplemented_files = self.get_unimplemented_files()
@@ -1266,13 +1189,9 @@ class ConciseMemoryAgent:
     def set_next_steps(self, next_steps: str):
         """Manually set Next Steps information"""
         self.current_next_steps = next_steps
-        self.logger.info(
-            f"📝 Next Steps manually set ({len(next_steps.strip())} chars)"
-        )
+        self.logger.info(f"📝 Next Steps manually set ({len(next_steps.strip())} chars)")
 
-    def should_trigger_memory_optimization(
-        self, messages: List[Dict[str, Any]], files_implemented: int = 0
-    ) -> bool:
+    def should_trigger_memory_optimization(self, messages: list[dict[str, Any]], files_implemented: int = 0) -> bool:
         """
         Check if memory optimization should be triggered
         NEW LOGIC: Trigger after write_file has been detected
@@ -1293,8 +1212,8 @@ class ConciseMemoryAgent:
         return False
 
     def apply_memory_optimization(
-        self, system_prompt: str, messages: List[Dict[str, Any]], files_implemented: int
-    ) -> List[Dict[str, Any]]:
+        self, system_prompt: str, messages: list[dict[str, Any]], files_implemented: int
+    ) -> list[dict[str, Any]]:
         """
         Apply memory optimization using concise approach
         NEW LOGIC: Clear all history after write_file, keep only system_prompt + initial_plan + current tools
@@ -1313,18 +1232,12 @@ class ConciseMemoryAgent:
 
         # Apply concise memory optimization after write_file detection
         # self.logger.info(f"🧹 CLEARING MEMORY after write_file - creating clean slate")
-        optimized_messages = self.create_concise_messages(
-            system_prompt, messages, files_implemented
-        )
+        optimized_messages = self.create_concise_messages(system_prompt, messages, files_implemented)
 
         # Clear the flag after applying optimization
         self.should_clear_memory_next = False
 
-        compression_ratio = (
-            ((len(messages) - len(optimized_messages)) / len(messages) * 100)
-            if messages
-            else 0
-        )
+        compression_ratio = ((len(messages) - len(optimized_messages)) / len(messages) * 100) if messages else 0
         self.logger.info(
             f"🎯 CONCISE optimization applied: {len(messages)} → {len(optimized_messages)} messages ({compression_ratio:.1f}% compression)"
         )
@@ -1366,13 +1279,9 @@ class ConciseMemoryAgent:
         if stats["unimplemented_files_list"]:
             print(f"  Next possible files: {stats['unimplemented_files_list'][:3]}...")
         print("")
-        print(
-            "📊 NEW LOGIC: write_file → clear memory → accumulate tools → next write_file"
-        )
+        print("📊 NEW LOGIC: write_file → clear memory → accumulate tools → next write_file")
         print("📊 NEXT STEPS: Stored separately from file, included in tool results")
-        print(
-            "📊 FILE TRACKING: All files extracted from plan, unimplemented files guide LLM decisions"
-        )
+        print("📊 FILE TRACKING: All files extracted from plan, unimplemented files guide LLM decisions")
         print("📊 Essential Tools Tracked:")
         essential_tools = [
             "read_code_mem",
@@ -1385,8 +1294,6 @@ class ConciseMemoryAgent:
             "get_file_structure",
         ]
         for tool in essential_tools:
-            tool_count = sum(
-                1 for r in self.current_round_tool_results if r["tool_name"] == tool
-            )
+            tool_count = sum(1 for r in self.current_round_tool_results if r["tool_name"] == tool)
             print(f"  - {tool}: {tool_count} calls")
         print("=" * 60)

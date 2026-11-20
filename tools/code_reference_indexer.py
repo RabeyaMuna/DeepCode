@@ -18,10 +18,9 @@ Key Improvement:
 """
 
 import json
-from pathlib import Path
-from typing import Dict, List, Tuple
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
+from pathlib import Path
 
 # Import MCP modules
 from mcp.server.fastmcp import FastMCP
@@ -40,9 +39,9 @@ class CodeReference:
 
     file_path: str
     file_type: str
-    main_functions: List[str]
-    key_concepts: List[str]
-    dependencies: List[str]
+    main_functions: list[str]
+    key_concepts: list[str]
+    dependencies: list[str]
     summary: str
     lines_of_code: int
     repo_name: str
@@ -57,12 +56,12 @@ class RelationshipInfo:
     target_file_path: str
     relationship_type: str
     confidence_score: float
-    helpful_aspects: List[str]
-    potential_contributions: List[str]
+    helpful_aspects: list[str]
+    potential_contributions: list[str]
     usage_suggestions: str
 
 
-def load_index_files_from_directory(indexes_directory: str) -> Dict[str, Dict]:
+def load_index_files_from_directory(indexes_directory: str) -> dict[str, dict]:
     """Load all index files from specified directory"""
     indexes_path = Path(indexes_directory).resolve()
 
@@ -74,7 +73,7 @@ def load_index_files_from_directory(indexes_directory: str) -> Dict[str, Dict]:
 
     for index_file in indexes_path.glob("*.json"):
         try:
-            with open(index_file, "r", encoding="utf-8") as f:
+            with open(index_file, encoding="utf-8") as f:
                 index_data = json.load(f)
                 index_cache[index_file.stem] = index_data
                 logger.info(f"Loaded index file: {index_file.name}")
@@ -85,7 +84,7 @@ def load_index_files_from_directory(indexes_directory: str) -> Dict[str, Dict]:
     return index_cache
 
 
-def extract_code_references(index_data: Dict) -> List[CodeReference]:
+def extract_code_references(index_data: dict) -> list[CodeReference]:
     """Extract code reference information from index data"""
     references = []
 
@@ -108,7 +107,7 @@ def extract_code_references(index_data: Dict) -> List[CodeReference]:
     return references
 
 
-def extract_relationships(index_data: Dict) -> List[RelationshipInfo]:
+def extract_relationships(index_data: dict) -> list[RelationshipInfo]:
     """Extract relationship information from index data"""
     relationships = []
 
@@ -129,9 +128,7 @@ def extract_relationships(index_data: Dict) -> List[RelationshipInfo]:
     return relationships
 
 
-def calculate_relevance_score(
-    target_file: str, reference: CodeReference, keywords: List[str] = None
-) -> float:
+def calculate_relevance_score(target_file: str, reference: CodeReference, keywords: list[str] = None) -> float:
     """Calculate relevance score between reference code and target file"""
     score = 0.0
 
@@ -174,10 +171,10 @@ def calculate_relevance_score(
 
 def find_relevant_references_in_cache(
     target_file: str,
-    index_cache: Dict[str, Dict],
-    keywords: List[str] = None,
+    index_cache: dict[str, dict],
+    keywords: list[str] = None,
     max_results: int = 10,
-) -> List[Tuple[CodeReference, float]]:
+) -> list[tuple[CodeReference, float]]:
     """Find reference code relevant to target file from provided cache"""
     all_references = []
 
@@ -195,9 +192,7 @@ def find_relevant_references_in_cache(
     return all_references[:max_results]
 
 
-def find_direct_relationships_in_cache(
-    target_file: str, index_cache: Dict[str, Dict]
-) -> List[RelationshipInfo]:
+def find_direct_relationships_in_cache(target_file: str, index_cache: dict[str, dict]) -> list[RelationshipInfo]:
     """Find direct relationships with target file from provided cache"""
     relationships = []
 
@@ -238,8 +233,8 @@ def find_direct_relationships_in_cache(
 
 def format_reference_output(
     target_file: str,
-    relevant_refs: List[Tuple[CodeReference, float]],
-    relationships: List[RelationshipInfo],
+    relevant_refs: list[tuple[CodeReference, float]],
+    relationships: list[RelationshipInfo],
 ) -> str:
     """Format reference information output"""
     output_lines = []
@@ -257,12 +252,8 @@ def format_reference_output(
             output_lines.append(f"### {i}. {rel.repo_file_path}")
             output_lines.append(f"**Relationship Type**: {rel.relationship_type}")
             output_lines.append(f"**Confidence Score**: {rel.confidence_score:.2f}")
-            output_lines.append(
-                f"**Helpful Aspects**: {', '.join(rel.helpful_aspects)}"
-            )
-            output_lines.append(
-                f"**Potential Contributions**: {', '.join(rel.potential_contributions)}"
-            )
+            output_lines.append(f"**Helpful Aspects**: {', '.join(rel.helpful_aspects)}")
+            output_lines.append(f"**Potential Contributions**: {', '.join(rel.potential_contributions)}")
             output_lines.append(f"**Usage Suggestions**: {rel.usage_suggestions}")
             output_lines.append("")
 
@@ -275,9 +266,7 @@ def format_reference_output(
             output_lines.append(f"### {i}. {ref.file_path} (Relevance: {score:.2f})")
             output_lines.append(f"**Repository**: {ref.repo_name}")
             output_lines.append(f"**File Type**: {ref.file_type}")
-            output_lines.append(
-                f"**Main Functions**: {', '.join(ref.main_functions[:5])}"
-            )
+            output_lines.append(f"**Main Functions**: {', '.join(ref.main_functions[:5])}")
             output_lines.append(f"**Key Concepts**: {', '.join(ref.key_concepts[:8])}")
             output_lines.append(f"**Dependencies**: {', '.join(ref.dependencies[:6])}")
             output_lines.append(f"**Lines of Code**: {ref.lines_of_code}")
@@ -315,14 +304,10 @@ def format_reference_output(
         output_lines.append("")
 
     output_lines.append("## 🚀 Next Actions")
-    output_lines.append(
-        "1. Analyze design patterns and architectural styles from the above reference code"
-    )
+    output_lines.append("1. Analyze design patterns and architectural styles from the above reference code")
     output_lines.append("2. Determine core functionalities and interfaces to implement")
     output_lines.append("3. Choose appropriate dependency libraries and tools")
-    output_lines.append(
-        "4. Design implementation solution consistent with existing code style"
-    )
+    output_lines.append("4. Design implementation solution consistent with existing code style")
     output_lines.append("5. Start writing specific code implementation")
 
     return "\n".join(output_lines)
@@ -332,9 +317,7 @@ def format_reference_output(
 
 
 @mcp.tool()
-async def search_code_references(
-    indexes_path: str, target_file: str, keywords: str = "", max_results: int = 10
-) -> str:
+async def search_code_references(indexes_path: str, target_file: str, keywords: str = "", max_results: int = 10) -> str:
     """
     **UNIFIED TOOL**: Search relevant reference code from index files for target file implementation.
     This tool combines directory setup, index loading, and searching in a single call.
@@ -363,22 +346,16 @@ async def search_code_references(
             return json.dumps(result, ensure_ascii=False, indent=2)
 
         # Step 2: Parse keywords
-        keyword_list = (
-            [kw.strip() for kw in keywords.split(",") if kw.strip()] if keywords else []
-        )
+        keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()] if keywords else []
 
         # Step 3: Find relevant reference code
-        relevant_refs = find_relevant_references_in_cache(
-            target_file, index_cache, keyword_list, max_results
-        )
+        relevant_refs = find_relevant_references_in_cache(target_file, index_cache, keyword_list, max_results)
 
         # Step 4: Find direct relationships
         relationships = find_direct_relationships_in_cache(target_file, index_cache)
 
         # Step 5: Format output
-        formatted_output = format_reference_output(
-            target_file, relevant_refs, relationships
-        )
+        formatted_output = format_reference_output(target_file, relevant_refs, relationships)
 
         result = {
             "status": "success",
@@ -452,9 +429,7 @@ async def get_indexes_overview(indexes_path: str) -> str:
                 concepts.update(file_summary.get("key_concepts", []))
 
             repo_info["file_types"] = sorted(list(file_types))
-            repo_info["main_concepts"] = sorted(list(concepts))[
-                :20
-            ]  # Limit concept count
+            repo_info["main_concepts"] = sorted(list(concepts))[:20]  # Limit concept count
 
             overview["repositories"][repo_name] = repo_info
 
@@ -480,12 +455,8 @@ def main():
     """Main function"""
     logger.info("Starting unified Code Reference Indexer MCP server")
     logger.info("Available tools:")
-    logger.info(
-        "1. search_code_references(indexes_path, target_file, keywords, max_results) - UNIFIED TOOL"
-    )
-    logger.info(
-        "2. get_indexes_overview(indexes_path) - Get overview of available indexes"
-    )
+    logger.info("1. search_code_references(indexes_path, target_file, keywords, max_results) - UNIFIED TOOL")
+    logger.info("2. get_indexes_overview(indexes_path) - Get overview of available indexes")
 
     # Run MCP server
     mcp.run()

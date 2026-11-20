@@ -5,11 +5,10 @@ Professional CLI Interface Module
 """
 
 import os
-import time
 import platform
-from pathlib import Path
-from typing import Optional
+import time
 import tkinter as tk
+from pathlib import Path
 from tkinter import filedialog
 
 
@@ -147,7 +146,7 @@ class CLIInterface:
         print(f"\n{Colors.BOLD}{Colors.OKCYAN}➤ Your choice: {Colors.ENDC}", end="")
         return input().strip().lower()
 
-    def upload_file_gui(self) -> Optional[str]:
+    def upload_file_gui(self) -> str | None:
         """Modern file upload interface using tkinter with cross-platform compatibility"""
         # Check if tkinter is available
         if not self.tkinter_available:
@@ -226,9 +225,7 @@ class CLIInterface:
 
                 # Print error and suggest alternative
                 self.print_status(f"GUI file dialog failed: {str(e)}", "error")
-                self.print_status(
-                    "Please use manual file path input instead", "warning"
-                )
+                self.print_status("Please use manual file path input instead", "warning")
                 return self._get_manual_file_path()
 
         self.print_status("Opening file browser dialog...", "upload")
@@ -277,17 +274,13 @@ class CLIInterface:
             self.print_status("No file selected", "warning")
             return None
 
-    def _get_manual_file_path(self) -> Optional[str]:
+    def _get_manual_file_path(self) -> str | None:
         """Fallback method for manual file path input when GUI fails"""
         print(
             f"\n{Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗"
         )
-        print(
-            "║                           MANUAL FILE INPUT                                   ║"
-        )
-        print(
-            f"╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}"
-        )
+        print("║                           MANUAL FILE INPUT                                   ║")
+        print(f"╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}")
 
         print(f"\n{Colors.YELLOW}📝 Supported file types:{Colors.ENDC}")
         print(f"   {Colors.CYAN}• PDF files (.pdf)")
@@ -311,9 +304,7 @@ class CLIInterface:
 
             # Check if file exists
             if os.path.exists(file_path):
-                self.print_status(
-                    f"File found: {os.path.basename(file_path)}", "success"
-                )
+                self.print_status(f"File found: {os.path.basename(file_path)}", "success")
                 return file_path
             else:
                 self.print_status("File not found at the specified path", "error")
@@ -327,33 +318,22 @@ class CLIInterface:
         print(
             f"\n{Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗"
         )
-        print(
-            "║                              URL INPUT                                        ║"
-        )
-        print(
-            f"╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}"
-        )
+        print("║                              URL INPUT                                        ║")
+        print(f"╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}")
 
         print(f"\n{Colors.YELLOW}📝 Supported URL Examples:{Colors.ENDC}")
         print(f"   {Colors.CYAN}• arXiv: https://arxiv.org/pdf/2403.00813")
         print(f"   {Colors.CYAN}• arXiv: @https://arxiv.org/pdf/2403.00813")
         print(f"   {Colors.CYAN}• IEEE:  https://ieeexplore.ieee.org/document/...")
         print(f"   {Colors.CYAN}• ACM:   https://dl.acm.org/doi/...")
-        print(
-            f"   {Colors.CYAN}• Direct PDF: https://example.com/paper.pdf{Colors.ENDC}"
-        )
+        print(f"   {Colors.CYAN}• Direct PDF: https://example.com/paper.pdf{Colors.ENDC}")
 
-        print(
-            f"\n{Colors.BOLD}{Colors.OKCYAN}🌐 Enter paper URL: {Colors.ENDC}", end=""
-        )
+        print(f"\n{Colors.BOLD}{Colors.OKCYAN}🌐 Enter paper URL: {Colors.ENDC}", end="")
         url = input().strip()
 
         if url:
             # Basic URL validation
-            if any(
-                domain in url.lower()
-                for domain in ["arxiv.org", "ieee", "acm.org", ".pdf", "researchgate"]
-            ):
+            if any(domain in url.lower() for domain in ["arxiv.org", "ieee", "acm.org", ".pdf", "researchgate"]):
                 self.print_status(f"URL received: {url}", "success")
                 return url
             else:

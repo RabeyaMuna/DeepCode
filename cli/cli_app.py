@@ -7,11 +7,11 @@ DeepCode - CLI Application Main Program
 ⚡ Revolutionizing research reproducibility through collaborative AI
 """
 
+import asyncio
+import json
 import os
 import sys
-import asyncio
 import time
-import json
 
 # 禁止生成.pyc文件
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -24,8 +24,8 @@ if parent_dir not in sys.path:
 
 # 导入MCP应用和工作流
 
-from cli.workflows import CLIWorkflowAdapter
 from cli.cli_interface import CLIInterface, Colors
+from cli.workflows import CLIWorkflowAdapter
 
 
 class CLIApp:
@@ -51,8 +51,9 @@ class CLIApp:
 
     def update_segmentation_config(self):
         """Update document segmentation configuration in mcp_agent.config.yaml"""
-        import yaml
         import os
+
+        import yaml
 
         config_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -61,32 +62,24 @@ class CLIApp:
 
         try:
             # Read current config
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
             # Update document segmentation settings
             if "document_segmentation" not in config:
                 config["document_segmentation"] = {}
 
-            config["document_segmentation"]["enabled"] = self.segmentation_config[
-                "enabled"
-            ]
-            config["document_segmentation"]["size_threshold_chars"] = (
-                self.segmentation_config["size_threshold_chars"]
-            )
+            config["document_segmentation"]["enabled"] = self.segmentation_config["enabled"]
+            config["document_segmentation"]["size_threshold_chars"] = self.segmentation_config["size_threshold_chars"]
 
             # Write updated config
             with open(config_path, "w", encoding="utf-8") as f:
                 yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
-            self.cli.print_status(
-                "📄 Document segmentation configuration updated", "success"
-            )
+            self.cli.print_status("📄 Document segmentation configuration updated", "success")
 
         except Exception as e:
-            self.cli.print_status(
-                f"⚠️ Failed to update segmentation config: {str(e)}", "warning"
-            )
+            self.cli.print_status(f"⚠️ Failed to update segmentation config: {str(e)}", "warning")
 
     async def process_input(self, input_source: str, input_type: str):
         """处理输入源（URL或文件）- 使用升级版智能体编排引擎"""
@@ -95,9 +88,7 @@ class CLIApp:
             self.update_segmentation_config()
 
             self.cli.print_separator()
-            self.cli.print_status(
-                "🚀 Starting intelligent agent orchestration...", "processing"
-            )
+            self.cli.print_status("🚀 Starting intelligent agent orchestration...", "processing")
 
             # 显示处理阶段（根据配置决定）
             self.cli.display_processing_stages(0, self.cli.enable_indexing)
@@ -112,12 +103,8 @@ class CLIApp:
             if result["status"] == "success":
                 # 显示完成状态
                 final_stage = 8 if self.cli.enable_indexing else 5
-                self.cli.display_processing_stages(
-                    final_stage, self.cli.enable_indexing
-                )
-                self.cli.print_status(
-                    "🎉 Agent orchestration completed successfully!", "complete"
-                )
+                self.cli.display_processing_stages(final_stage, self.cli.enable_indexing)
+                self.cli.print_status("🎉 Agent orchestration completed successfully!", "complete")
 
                 # 显示结果
                 self.display_results(
@@ -165,9 +152,7 @@ class CLIApp:
             mode_display = "🧠 Comprehensive Mode"
         else:
             mode_display = "⚡ Optimized Mode"
-        print(
-            f"{Colors.BOLD}{Colors.PURPLE}🤖 PIPELINE MODE: {mode_display}{Colors.ENDC}"
-        )
+        print(f"{Colors.BOLD}{Colors.PURPLE}🤖 PIPELINE MODE: {mode_display}{Colors.ENDC}")
         self.cli.print_separator("─", 79, Colors.PURPLE)
 
         print(f"{Colors.BOLD}{Colors.OKCYAN}📊 ANALYSIS PHASE RESULTS:{Colors.ENDC}")
@@ -179,45 +164,25 @@ class CLIApp:
                 parsed_analysis = json.loads(analysis_result)
                 print(json.dumps(parsed_analysis, indent=2, ensure_ascii=False))
             else:
-                print(
-                    analysis_result[:1000] + "..."
-                    if len(analysis_result) > 1000
-                    else analysis_result
-                )
+                print(analysis_result[:1000] + "..." if len(analysis_result) > 1000 else analysis_result)
         except Exception:
-            print(
-                analysis_result[:1000] + "..."
-                if len(analysis_result) > 1000
-                else analysis_result
-            )
+            print(analysis_result[:1000] + "..." if len(analysis_result) > 1000 else analysis_result)
 
         print(f"\n{Colors.BOLD}{Colors.PURPLE}📥 DOWNLOAD PHASE RESULTS:{Colors.ENDC}")
         self.cli.print_separator("─", 79, Colors.PURPLE)
-        print(
-            download_result[:1000] + "..."
-            if len(download_result) > 1000
-            else download_result
-        )
+        print(download_result[:1000] + "..." if len(download_result) > 1000 else download_result)
 
-        print(
-            f"\n{Colors.BOLD}{Colors.GREEN}⚙️  IMPLEMENTATION PHASE RESULTS:{Colors.ENDC}"
-        )
+        print(f"\n{Colors.BOLD}{Colors.GREEN}⚙️  IMPLEMENTATION PHASE RESULTS:{Colors.ENDC}")
         self.cli.print_separator("─", 79, Colors.GREEN)
         print(repo_result[:1000] + "..." if len(repo_result) > 1000 else repo_result)
 
         # 尝试提取生成的代码目录信息
         if "Code generated in:" in repo_result:
-            code_dir = (
-                repo_result.split("Code generated in:")[-1].strip().split("\n")[0]
-            )
-            print(
-                f"\n{Colors.BOLD}{Colors.YELLOW}📁 Generated Code Directory: {Colors.ENDC}{code_dir}"
-            )
+            code_dir = repo_result.split("Code generated in:")[-1].strip().split("\n")[0]
+            print(f"\n{Colors.BOLD}{Colors.YELLOW}📁 Generated Code Directory: {Colors.ENDC}{code_dir}")
 
         # 显示处理完成的工作流阶段
-        print(
-            f"\n{Colors.BOLD}{Colors.OKCYAN}🔄 COMPLETED WORKFLOW STAGES:{Colors.ENDC}"
-        )
+        print(f"\n{Colors.BOLD}{Colors.OKCYAN}🔄 COMPLETED WORKFLOW STAGES:{Colors.ENDC}")
 
         if pipeline_mode == "chat":
             stages = [
@@ -262,7 +227,7 @@ class CLIApp:
                     self.cli.print_goodbye()
                     break
 
-                elif choice in ["u", "url"]:
+                if choice in ["u", "url"]:
                     url = self.cli.get_url_input()
                     if url:
                         await self.process_input(url, "url")
@@ -283,22 +248,16 @@ class CLIApp:
                 elif choice in ["c", "config", "configure"]:
                     # Sync current segmentation config from CLI interface
                     self.segmentation_config["enabled"] = self.cli.segmentation_enabled
-                    self.segmentation_config["size_threshold_chars"] = (
-                        self.cli.segmentation_threshold
-                    )
+                    self.segmentation_config["size_threshold_chars"] = self.cli.segmentation_threshold
 
                     self.cli.show_configuration_menu()
 
                     # Sync back from CLI interface after configuration changes
                     self.segmentation_config["enabled"] = self.cli.segmentation_enabled
-                    self.segmentation_config["size_threshold_chars"] = (
-                        self.cli.segmentation_threshold
-                    )
+                    self.segmentation_config["size_threshold_chars"] = self.cli.segmentation_threshold
 
                 else:
-                    self.cli.print_status(
-                        "Invalid choice. Please select U, F, T, C, H, or Q.", "warning"
-                    )
+                    self.cli.print_status("Invalid choice. Please select U, F, T, C, H, or Q.", "warning")
 
                 # 询问是否继续
                 if self.cli.is_running and choice in ["u", "f", "t", "chat", "text"]:
@@ -330,9 +289,7 @@ async def main():
         print(f"\n{Colors.FAIL}❌ Application error: {str(e)}{Colors.ENDC}")
     finally:
         end_time = time.time()
-        print(
-            f"\n{Colors.BOLD}{Colors.CYAN}⏱️  Total runtime: {end_time - start_time:.2f} seconds{Colors.ENDC}"
-        )
+        print(f"\n{Colors.BOLD}{Colors.CYAN}⏱️  Total runtime: {end_time - start_time:.2f} seconds{Colors.ENDC}")
 
         # 清理缓存文件
         print(f"{Colors.YELLOW}🧹 Cleaning up cache files...{Colors.ENDC}")
@@ -343,9 +300,7 @@ async def main():
         else:  # Unix/Linux/macOS
             os.system('find . -type d -name "__pycache__" -exec rm -r {} + 2>/dev/null')
 
-        print(
-            f"{Colors.OKGREEN}✨ Goodbye! Thanks for using DeepCode CLI! ✨{Colors.ENDC}"
-        )
+        print(f"{Colors.OKGREEN}✨ Goodbye! Thanks for using DeepCode CLI! ✨{Colors.ENDC}")
 
 
 if __name__ == "__main__":

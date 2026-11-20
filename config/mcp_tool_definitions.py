@@ -12,14 +12,14 @@ Separate tool definitions from main program logic, providing standardized tool d
 - 项目结构工具 (Project Structure Tools)
 """
 
-from typing import Dict, List, Any
+from typing import Any
 
 
 class MCPToolDefinitions:
     """MCP工具定义管理器"""
 
     @staticmethod
-    def get_code_implementation_tools() -> List[Dict[str, Any]]:
+    def get_code_implementation_tools() -> list[dict[str, Any]]:
         """
         获取代码实现相关的工具定义
         Get tool definitions for code implementation
@@ -33,7 +33,7 @@ class MCPToolDefinitions:
         ]
 
     @staticmethod
-    def _get_read_file_tool() -> Dict[str, Any]:
+    def _get_read_file_tool() -> dict[str, Any]:
         """读取文件工具定义"""
         return {
             "name": "read_file",
@@ -59,7 +59,7 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def _get_read_code_mem_tool() -> Dict[str, Any]:
+    def _get_read_code_mem_tool() -> dict[str, Any]:
         """Read code memory tool definition - reads from implement_code_summary.md"""
         return {
             "name": "read_code_mem",
@@ -78,7 +78,7 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def _get_write_file_tool() -> Dict[str, Any]:
+    def _get_write_file_tool() -> dict[str, Any]:
         """写入文件工具定义"""
         return {
             "name": "write_file",
@@ -110,7 +110,7 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def _get_execute_python_tool() -> Dict[str, Any]:
+    def _get_execute_python_tool() -> dict[str, Any]:
         """Python执行工具定义"""
         return {
             "name": "execute_python",
@@ -130,7 +130,7 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def _get_execute_bash_tool() -> Dict[str, Any]:
+    def _get_execute_bash_tool() -> dict[str, Any]:
         """Bash执行工具定义"""
         return {
             "name": "execute_bash",
@@ -153,7 +153,7 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def _get_file_structure_tool() -> Dict[str, Any]:
+    def _get_file_structure_tool() -> dict[str, Any]:
         """文件结构获取工具定义"""
         return {
             "name": "get_file_structure",
@@ -176,7 +176,7 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def _get_search_code_references_tool() -> Dict[str, Any]:
+    def _get_search_code_references_tool() -> dict[str, Any]:
         """统一代码参考搜索工具定义 - 合并了三个步骤为一个工具"""
         return {
             "name": "search_code_references",
@@ -208,7 +208,7 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def _get_get_indexes_overview_tool() -> Dict[str, Any]:
+    def _get_get_indexes_overview_tool() -> dict[str, Any]:
         """获取索引概览工具定义"""
         return {
             "name": "get_indexes_overview",
@@ -226,7 +226,7 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def _get_set_workspace_tool() -> Dict[str, Any]:
+    def _get_set_workspace_tool() -> dict[str, Any]:
         """Set workspace directory tool definition"""
         return {
             "name": "set_workspace",
@@ -262,7 +262,7 @@ class MCPToolDefinitions:
     #     }
 
     @staticmethod
-    def get_available_tool_sets() -> Dict[str, str]:
+    def get_available_tool_sets() -> dict[str, str]:
         """
         获取可用的工具集合
         Get available tool sets
@@ -275,7 +275,7 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def get_tool_set(tool_set_name: str) -> List[Dict[str, Any]]:
+    def get_tool_set(tool_set_name: str) -> list[dict[str, Any]]:
         """
         根据名称获取特定的工具集
         Get specific tool set by name
@@ -287,7 +287,7 @@ class MCPToolDefinitions:
         return tool_sets.get(tool_set_name, [])
 
     @staticmethod
-    def get_all_tools() -> List[Dict[str, Any]]:
+    def get_all_tools() -> list[dict[str, Any]]:
         """
         获取所有可用工具
         Get all available tools
@@ -299,7 +299,7 @@ class MCPToolDefinitions:
 
 
 # 便捷访问函数
-def get_mcp_tools(tool_set: str = "code_implementation") -> List[Dict[str, Any]]:
+def get_mcp_tools(tool_set: str = "code_implementation") -> list[dict[str, Any]]:
     """
     便捷函数：获取MCP工具定义
     Convenience function: Get MCP tool definitions
