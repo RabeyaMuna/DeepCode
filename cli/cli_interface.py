@@ -3,7 +3,6 @@
 Enhanced CLI Interface Module for DeepCode
 增强版CLI界面模块 - 专为DeepCode设计
 """
-
 import os
 import time
 import platform
@@ -40,13 +39,12 @@ class CLIInterface:
         self.is_running = True
         self.processing_history = []
         self.enable_indexing = True  # Default configuration
-        
+
         # Load segmentation config from the same source as UI
         self._load_segmentation_config()
-        
+
         # Initialize tkinter availability
         self._init_tkinter()
-
     def _load_segmentation_config(self):
         """Load segmentation configuration from mcp_agent.config.yaml"""
         try:
@@ -64,7 +62,7 @@ class CLIInterface:
         """Save segmentation configuration to mcp_agent.config.yaml"""
         import yaml
         import os
-        
+
         # Get the project root directory (where mcp_agent.config.yaml is located)
         current_file = os.path.abspath(__file__)
         cli_dir = os.path.dirname(current_file)  # cli directory
@@ -144,7 +142,6 @@ class CLIInterface:
 ║    {Colors.BOLD}{Colors.OKCYAN}▶ Collaborative Multi-Agent Architecture                             {Colors.CYAN}║
 ║    {Colors.BOLD}{Colors.OKCYAN}▶ Intelligent Code Implementation & Validation                       {Colors.CYAN}║
 ║    {Colors.BOLD}{Colors.OKCYAN}▶ Future Vision: One Sentence → Complete Codebase                   {Colors.CYAN}║
-╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}
 """
         print(banner)
 
