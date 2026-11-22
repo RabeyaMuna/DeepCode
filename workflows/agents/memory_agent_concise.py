@@ -907,7 +907,6 @@ class ConciseMemoryAgent:
 
         # Get formatted file lists
         file_lists = self.get_formatted_files_lists()
-        implemented_files_list = file_lists["implemented"]
 
         # 1. Add initial plan message (always preserved)
         initial_plan_message = {
@@ -920,7 +919,7 @@ class ConciseMemoryAgent:
 **Working Directory:** Current workspace
 
 **All Previously Implemented Files:**
-{implemented_files_list}
+{file_lists["implemented"]}
 
 **Current Status:** {files_implemented} files implemented
 
@@ -1202,7 +1201,6 @@ class ConciseMemoryAgent:
                 r["tool_name"] for r in self.current_round_tool_results
             ],
             "implemented_files_tracked": files_implemented,
-            "implemented_files_list": self.implemented_files.copy(),
             "phases_parsed": len(self.phase_structure),
             "next_steps_available": bool(self.current_next_steps.strip()),
             "next_steps_length": len(self.current_next_steps.strip())
