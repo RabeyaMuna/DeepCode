@@ -373,7 +373,7 @@ class DocumentSegmenter:
         concept_groups = self._identify_concept_groups(content)
         
         # 3. Identify formula derivation chains
-        formula_chains = self._identify_formula_chains(content)
+        _ = self._identify_formula_chains(content)
         
         # 4. Merge related content blocks to ensure integrity
         content_blocks = self._merge_related_content_blocks(
@@ -1260,7 +1260,7 @@ async def analyze_and_segment_document(paper_dir: str, force_refresh: bool = Fal
                 # Remove corrupted index file and continue with new analysis
                 try:
                     os.remove(index_file_path)
-                except:
+                except OSError:
                     pass
         
         # Read document content
@@ -1429,7 +1429,7 @@ async def read_document_segments(
             "segments": selected_segments
         }, ensure_ascii=False, indent=2)
         
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, KeyError) as e:
         logger.error(f"Error in read_document_segments: {e}")
         return json.dumps({
             "status": "error",
