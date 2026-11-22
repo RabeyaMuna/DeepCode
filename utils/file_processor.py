@@ -1,6 +1,4 @@
-"""
-File processing utilities for handling paper files and related operations.
-"""
+"""File processing utilities for handling paper files and related operations."""
 
 import json
 import os
@@ -9,14 +7,11 @@ from typing import Dict, List, Optional, Union
 
 
 class FileProcessor:
-    """
-    A class to handle file processing operations including path extraction and file reading.
-    """
+    """A class to handle file processing operations including path extraction and file reading."""
 
     @staticmethod
     def extract_file_path(file_info: Union[str, Dict]) -> Optional[str]:
-        """
-        Extract paper directory path from the input information.
+        """Extract paper directory path from the input information.
 
         Args:
             file_info: Either a JSON string or a dictionary containing file information
@@ -72,8 +67,7 @@ class FileProcessor:
 
     @staticmethod
     def find_markdown_file(directory: str) -> Optional[str]:
-        """
-        Find the first markdown file in the given directory.
+        """Find the first markdown file in the given directory.
 
         Args:
             directory: Directory path to search
@@ -91,8 +85,7 @@ class FileProcessor:
 
     @staticmethod
     def parse_markdown_sections(content: str) -> List[Dict[str, Union[str, int, List]]]:
-        """
-        Parse markdown content and organize it by sections based on headers.
+        """Parse markdown content and organize it by sections based on headers.
 
         Args:
             content: The markdown content to parse
@@ -142,8 +135,7 @@ class FileProcessor:
 
     @staticmethod
     def _organize_sections(sections: List[Dict]) -> List[Dict]:
-        """
-        Organize sections into a hierarchical structure based on their levels.
+        """Organize sections into a hierarchical structure based on their levels.
 
         Args:
             sections: List of sections with their levels
@@ -169,8 +161,7 @@ class FileProcessor:
 
     @staticmethod
     async def read_file_content(file_path: str) -> str:
-        """
-        Read the content of a file asynchronously.
+        """Read the content of a file asynchronously.
 
         Args:
             file_path: Path to the file to read
@@ -208,8 +199,7 @@ class FileProcessor:
 
     @staticmethod
     def format_section_content(section: Dict) -> str:
-        """
-        Format a section's content with standardized spacing and structure.
+        """Format a section's content with standardized spacing and structure.
 
         Args:
             section: Dictionary containing section information
@@ -241,8 +231,7 @@ class FileProcessor:
 
     @staticmethod
     def standardize_output(sections: List[Dict]) -> str:
-        """
-        Convert structured sections into a standardized string format.
+        """Convert structured sections into a standardized string format.
 
         Args:
             sections: List of section dictionaries
@@ -263,8 +252,7 @@ class FileProcessor:
     async def process_file_input(
         cls, file_input: Union[str, Dict], base_dir: str = None
     ) -> Dict:
-        """
-        Process file input information and return the structured content.
+        """Process file input information and return the structured content.
 
         Args:
             file_input: File input information (JSON string, dict, or direct file path)
